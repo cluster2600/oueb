@@ -43,13 +43,13 @@ MC:
 
 SG:
   country_name: Singapore
-  currency: USD                  # aligné sur les 4 devises annoncées (USD)
-  amount_minor: 50000            # 500.00 USD
+  currency: SGD                  # SGD pour activer PayNow (méthode locale)
+  amount_minor: 50000            # 500.00 SGD (SGD a 2 décimales)
   locale: en-SG
   lang: en
   prompt_key: sg_en              # anglais professionnel international
-  stripe_price_id: price_SG_usd_500
-  payment_methods: [card]        # PayNow = SGD uniquement -> incompatible avec USD
+  stripe_price_id: price_SG_sgd_500
+  payment_methods: [card, paynow]  # PayNow = SGD, paiement par QR quasi-immédiat
   domain_tlds: [".sg", ".com.sg"]
 
 JP:

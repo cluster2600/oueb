@@ -127,7 +127,7 @@ sans paramètre par requête. `payment_methods` par pays (dans
 | 🇨🇭 CH / 🇱🇮 LI | **TWINT** | CHF ✓ | immédiat |
 | 🇯🇵 JP | **Konbini** (paiement en supérette) | JPY ✓ | **asynchrone** |
 | 🇲🇨 MC | carte (SEPA/Bancontact en option) | EUR | immédiat |
-| 🇸🇬 SG | carte | — | PayNow exigerait du SGD (on facture en USD) |
+| 🇸🇬 SG | **PayNow** (QR) | SGD ✓ | quasi-immédiat |
 
 > ⚠️ **Konbini est asynchrone.** À la validation du checkout, Stripe émet
 > `checkout.session.completed` avec `payment_status: "unpaid"` (le client a juste

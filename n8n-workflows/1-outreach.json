@@ -12,7 +12,7 @@
           ]
         }
       },
-      "id": "44e046da-a754-4e00-a2b2-59e55e047068",
+      "id": "313d7375-3749-4b3b-99b2-25063c39711f",
       "name": "Schedule (quotidien 09h)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -53,7 +53,7 @@
         },
         "options": {}
       },
-      "id": "1d40a833-7f11-4719-9715-322c228c6288",
+      "id": "ef0ada82-6670-4d4e-a5c3-78c6019fdf2f",
       "name": "Paramètres requête",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -80,7 +80,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"query\": $json.query, \"location\": $json.location, \"country\": $json.country, \"limit\": 40 } }}"
       },
-      "id": "76646460-64fe-4c16-88bd-e755acfe4897",
+      "id": "08132d05-5383-4415-929a-71a327435472",
       "name": "Scraper /scrape",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -94,7 +94,7 @@
         "batchSize": 1,
         "options": {}
       },
-      "id": "6c987f8f-af65-43ad-b0d4-4db73e23d5ae",
+      "id": "8eb4a4cb-7f1b-439e-86ad-8e66f290ad6d",
       "name": "Loop leads",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
@@ -105,9 +105,9 @@
     },
     {
       "parameters": {
-        "jsCode": "// Country Router (+ enrichissement registre du commerce Zefix pour la Suisse).\n// Miroir de config/country_matrix.yaml + config/prompts.md.\n// Entree : item.json = reponse Zefix (peut etre vide hors CH) ; le lead d'origine\n// est lu via $('Loop leads') pour survivre a l'appel HTTP Zefix intercalaire.\nconst MATRIX = {\n  CH: { currency:'CHF', amount_minor:50000, locale:'de-CH', lang:'de_CH',\n        prompt_key:'ch_de', stripe_price_id:'price_CH_chf_500', tld:'.ch',\n        payment_methods:['card','twint'] },\n  LI: { currency:'CHF', amount_minor:50000, locale:'de-LI', lang:'de_DE',\n        prompt_key:'li_de', stripe_price_id:'price_LI_chf_500', tld:'.li',\n        payment_methods:['card','twint'] },\n  MC: { currency:'EUR', amount_minor:50000, locale:'fr-MC', lang:'fr_FR',\n        prompt_key:'mc_fr', stripe_price_id:'price_MC_eur_500', tld:'.mc',\n        payment_methods:['card'] },\n  SG: { currency:'USD', amount_minor:50000, locale:'en-SG', lang:'en_US',\n        prompt_key:'sg_en', stripe_price_id:'price_SG_usd_500', tld:'.sg',\n        payment_methods:['card'] },  // PayNow = SGD only, incompatible avec USD\n  JP: { currency:'JPY', amount_minor:79800, locale:'ja-JP', lang:'ja',\n        prompt_key:'jp_keigo', stripe_price_id:'price_JP_jpy_79800', tld:'.jp',\n        payment_methods:['card','konbini'] },  // Konbini = ASYNCHRONE (voir provisioning)\n};\nconst PROMPTS = {\n  ch_de: \"Schweizer Hochdeutsch, Sie-Form, sachlich, immer 'ss' statt 'ss'. JSON only.\",\n  ch_fr: \"Francais de Suisse romande, vouvoiement, ton sobre et factuel, sans superlatifs. JSON only.\",\n  ch_it: \"Italiano della Svizzera italiana, forma di cortesia (Lei), tono sobrio e professionale. JSON only.\",\n  li_de: \"Formelles Hochdeutsch, Sie-Form, serioes/diskret (Treuhand, Family Office). JSON only.\",\n  mc_fr: \"Francais soutenu, vouvoiement, registre luxe/confidentialite. JSON only.\",\n  sg_en: \"Professional international English (British spelling), premium B2B. JSON only.\",\n  jp_keigo: \"日本語の敬語で作成。丁寧語(です・ます)で統一し、相手には尊敬語、自社には謙譲語を用いる。JSONのみ返す。\",\n};\n// Cantons romands + Tessin -> langue (Fribourg bilingue: defaut fr).\nconst CANTON_LANG = { GE:'fr', VD:'fr', VS:'fr', NE:'fr', JU:'fr', FR:'fr', TI:'it' };\nconst CH_PROMPT = { de:'ch_de', fr:'ch_fr', it:'ch_it' };\nconst CH_LANG   = { de:'de_CH', fr:'fr_CH', it:'it_CH' };\n\nconst out = [];\nfor (const item of $input.all()) {\n  const lead = $('Loop leads').item.json;\n  const c = (lead.country || '').toUpperCase();\n  const m = MATRIX[c];\n  if (!m) { continue; }\n  const row = { ...lead, ...m };\n\n  // Zefix : la reponse peut etre un tableau ou { list: [...] }.\n  const z = item.json;\n  const firm = Array.isArray(z) ? z[0] : (z && z.list ? z.list[0] : null);\n  if (c === 'CH' && firm) {\n    const canton = String(firm.canton || firm.registryOfficeCanton || '').toUpperCase();\n    const l = CANTON_LANG[canton] || 'de';\n    row.prompt_key = CH_PROMPT[l];\n    row.lang = CH_LANG[l];\n    row.canton = canton || null;\n    row.uid = firm.uid || null;                    // CHE-xxx.xxx.xxx (facturation)\n    row.official_name = firm.name || lead.name;    // raison sociale officielle\n  }\n  row.name = row.official_name || lead.name;\n  row.system_prompt = PROMPTS[row.prompt_key];\n  row.slug = (row.name || '').toLowerCase().normalize('NFKD')\n               .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);\n  row.domain_target = null;\n  out.push({ json: row });\n}\nreturn out;\n"
+        "jsCode": "// Country Router (+ enrichissement registre du commerce Zefix pour la Suisse).\n// Miroir de config/country_matrix.yaml + config/prompts.md.\n// Entree : item.json = reponse Zefix (peut etre vide hors CH) ; le lead d'origine\n// est lu via $('Loop leads') pour survivre a l'appel HTTP Zefix intercalaire.\nconst MATRIX = {\n  CH: { currency:'CHF', amount_minor:50000, locale:'de-CH', lang:'de_CH',\n        prompt_key:'ch_de', stripe_price_id:'price_CH_chf_500', tld:'.ch',\n        payment_methods:['card','twint'] },\n  LI: { currency:'CHF', amount_minor:50000, locale:'de-LI', lang:'de_DE',\n        prompt_key:'li_de', stripe_price_id:'price_LI_chf_500', tld:'.li',\n        payment_methods:['card','twint'] },\n  MC: { currency:'EUR', amount_minor:50000, locale:'fr-MC', lang:'fr_FR',\n        prompt_key:'mc_fr', stripe_price_id:'price_MC_eur_500', tld:'.mc',\n        payment_methods:['card'] },\n  SG: { currency:'SGD', amount_minor:50000, locale:'en-SG', lang:'en_US',\n        prompt_key:'sg_en', stripe_price_id:'price_SG_sgd_500', tld:'.sg',\n        payment_methods:['card','paynow'] },  // PayNow = SGD, QR quasi-immédiat\n  JP: { currency:'JPY', amount_minor:79800, locale:'ja-JP', lang:'ja',\n        prompt_key:'jp_keigo', stripe_price_id:'price_JP_jpy_79800', tld:'.jp',\n        payment_methods:['card','konbini'] },  // Konbini = ASYNCHRONE (voir provisioning)\n};\nconst PROMPTS = {\n  ch_de: \"Schweizer Hochdeutsch, Sie-Form, sachlich, immer 'ss' statt 'ss'. JSON only.\",\n  ch_fr: \"Francais de Suisse romande, vouvoiement, ton sobre et factuel, sans superlatifs. JSON only.\",\n  ch_it: \"Italiano della Svizzera italiana, forma di cortesia (Lei), tono sobrio e professionale. JSON only.\",\n  li_de: \"Formelles Hochdeutsch, Sie-Form, serioes/diskret (Treuhand, Family Office). JSON only.\",\n  mc_fr: \"Francais soutenu, vouvoiement, registre luxe/confidentialite. JSON only.\",\n  sg_en: \"Professional international English (British spelling), premium B2B. JSON only.\",\n  jp_keigo: \"日本語の敬語で作成。丁寧語(です・ます)で統一し、相手には尊敬語、自社には謙譲語を用いる。JSONのみ返す。\",\n};\n// Cantons romands + Tessin -> langue (Fribourg bilingue: defaut fr).\nconst CANTON_LANG = { GE:'fr', VD:'fr', VS:'fr', NE:'fr', JU:'fr', FR:'fr', TI:'it' };\nconst CH_PROMPT = { de:'ch_de', fr:'ch_fr', it:'ch_it' };\nconst CH_LANG   = { de:'de_CH', fr:'fr_CH', it:'it_CH' };\n\nconst out = [];\nfor (const item of $input.all()) {\n  const lead = $('Loop leads').item.json;\n  const c = (lead.country || '').toUpperCase();\n  const m = MATRIX[c];\n  if (!m) { continue; }\n  const row = { ...lead, ...m };\n\n  // Zefix : la reponse peut etre un tableau ou { list: [...] }.\n  const z = item.json;\n  const firm = Array.isArray(z) ? z[0] : (z && z.list ? z.list[0] : null);\n  if (c === 'CH' && firm) {\n    const canton = String(firm.canton || firm.registryOfficeCanton || '').toUpperCase();\n    const l = CANTON_LANG[canton] || 'de';\n    row.prompt_key = CH_PROMPT[l];\n    row.lang = CH_LANG[l];\n    row.canton = canton || null;\n    row.uid = firm.uid || null;                    // CHE-xxx.xxx.xxx (facturation)\n    row.official_name = firm.name || lead.name;    // raison sociale officielle\n  }\n  row.name = row.official_name || lead.name;\n  row.system_prompt = PROMPTS[row.prompt_key];\n  row.slug = (row.name || '').toLowerCase().normalize('NFKD')\n               .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);\n  row.domain_target = null;\n  out.push({ json: row });\n}\nreturn out;\n"
       },
-      "id": "5f74fbdf-f111-4128-9fdc-85f58ecbd6c8",
+      "id": "52f7c5a4-179d-4386-bed7-fe1a1f157f9f",
       "name": "Country Router",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -125,7 +125,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"model\": \"qwen2.5:14b-instruct\", \"stream\": false, \"format\": \"json\", \"system\": $json.system_prompt, \"prompt\": \"Etablissement: \" + $json.name + \" | \" + ($json.category||\"\") + \" | \" + ($json.address||\"\") + \". Genere le JSON one-page: title, meta_description, h1, h2[], hero_subtitle, sections[{heading,body}], cta.\" } }}"
       },
-      "id": "c30424cf-0f61-4111-bc1e-f0002eccaf05",
+      "id": "24734113-7d1f-42bf-89a8-7100716bfb9f",
       "name": "Ollama (contenu+SEO)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -145,7 +145,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"template_id\": $('Paramètres requête').item.json.template_id, \"slug\": $('Country Router').item.json.slug, \"title\": $('Country Router').item.json.name, \"lang\": $('Country Router').item.json.lang, \"seo\": JSON.parse($json.response) } }}"
       },
-      "id": "8ec6ad4b-a061-49ac-a60a-daedb5caf91c",
+      "id": "36550505-2835-4a7b-bb44-dcf6e43f3c66",
       "name": "WP Provisioner",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -196,7 +196,7 @@
           ]
         }
       },
-      "id": "911ba3ca-25fd-4703-b545-bb912f87b5b8",
+      "id": "2af901ea-5560-44c6-938b-84b0717b6ee9",
       "name": "Stripe Payment Link",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -223,7 +223,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"email\": ($('Loop leads').item.json.email || \"\"), \"name\": $('Country Router').item.json.name, \"status\": \"enabled\", \"lists\": [1], \"attribs\": { \"preview_url\": $('WP Provisioner').item.json.url, \"payment_url\": $json.url, \"country\": $('Country Router').item.json.country } } }}"
       },
-      "id": "c42275b3-143a-419f-8246-e257785235f3",
+      "id": "1d243ab7-aca1-4011-8e3d-fa7ecede7468",
       "name": "Listmonk (campagne perso)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -234,7 +234,7 @@
     },
     {
       "parameters": {},
-      "id": "1c4785d3-2805-4051-a159-96a4e175db91",
+      "id": "4490ac66-9261-47c9-835c-337a3825f5d4",
       "name": "Fin",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
@@ -252,7 +252,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"name\": $json.name, \"activeOnly\": true } }}"
       },
-      "id": "0ae068f7-cd5f-4950-b862-9e50a43e3de3",
+      "id": "84632e7c-aebb-4e4b-8bf7-4cecc02b7156",
       "name": "Zefix enrich (CH)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -268,7 +268,7 @@
         "url": "=https://api.houjin-bangou.nta.go.jp/4/name?id={{ $env.HOUJIN_BANGO_APP_ID }}&name={{ encodeURIComponent($json.name) }}&type=12&mode=2",
         "options": {}
       },
-      "id": "b6b0eb26-eb69-4589-9cae-0c1fafaeb9e9",
+      "id": "43f1972e-01c3-4a0e-9d06-a32875bd454c",
       "name": "Houjin-Bango enrich (JP) — PLACEHOLDER",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
