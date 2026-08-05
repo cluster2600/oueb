@@ -8,7 +8,7 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "808cd69a-16ef-4017-a199-7219cd13d30c",
+      "id": "d0bc9e5a-dbb1-4937-a009-6a1380c6a028",
       "name": "Webhook (ask Caddy)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -25,7 +25,7 @@
           "queryReplacement": "={{ $json.query.domain }}"
         }
       },
-      "id": "bb956f86-ee60-433f-8e70-28ce6c9545df",
+      "id": "d4585864-de2f-4199-8085-f49b27312705",
       "name": "Postgres — domaine actif ?",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
@@ -54,7 +54,7 @@
           ]
         }
       },
-      "id": "a09e32c9-5380-4657-96e5-81b923986d7a",
+      "id": "379d4b8b-6de8-4e17-b047-c272428e9906",
       "name": "IF autorisé",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -71,7 +71,7 @@
           "responseCode": 200
         }
       },
-      "id": "da6567db-9b20-4cf6-8829-8d353d7bf301",
+      "id": "d876f8fc-4856-49a5-8704-53ce892496c4",
       "name": "200 OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -88,7 +88,7 @@
           "responseCode": 404
         }
       },
-      "id": "30e520e2-8128-4b4d-a0e3-d260242eaad0",
+      "id": "9cd59d5c-247f-4548-be78-50466138e7e4",
       "name": "404 refus",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,

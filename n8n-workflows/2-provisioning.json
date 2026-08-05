@@ -10,7 +10,7 @@
           "rawBody": true
         }
       },
-      "id": "30420472-6888-479b-b68a-636954191049",
+      "id": "4bef28c6-7bae-4b33-98eb-8daa27b26a5f",
       "name": "Webhook Stripe",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -23,7 +23,7 @@
       "parameters": {
         "jsCode": "// Vérifie la signature Stripe (HMAC SHA-256 sur le corps brut).\nconst crypto = require('crypto');\nconst secret = $env.STRIPE_WEBHOOK_SECRET;\nconst sigHeader = $json.headers['stripe-signature'] || '';\nconst raw = $json.body;                    // Webhook en mode \"raw body\"\nconst parts = Object.fromEntries(sigHeader.split(',').map(p => p.split('=')));\nconst signed = parts.t + '.' + (typeof raw === 'string' ? raw : JSON.stringify(raw));\nconst expected = crypto.createHmac('sha256', secret).update(signed).digest('hex');\nif (expected !== parts.v1) { throw new Error('Signature Stripe invalide'); }\nconst event = typeof raw === 'string' ? JSON.parse(raw) : raw;\nreturn [{ json: event }];\n"
       },
-      "id": "fd3aea8f-4113-4864-be4e-c29ee23388fe",
+      "id": "c0e78984-9131-41eb-b0ca-3f5cbdc5cff5",
       "name": "Vérifier signature",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -37,13 +37,13 @@
         "conditions": {
           "options": {
             "caseSensitive": true,
-            "typeValidation": "strict"
+            "typeValidation": "loose"
           },
           "combinator": "and",
           "conditions": [
             {
-              "leftValue": "={{ $json.type }}",
-              "rightValue": "checkout.session.completed",
+              "leftValue": "={{ $json.data.object.payment_status }}",
+              "rightValue": "paid",
               "operator": {
                 "type": "string",
                 "operation": "equals"
@@ -52,8 +52,8 @@
           ]
         }
       },
-      "id": "d331b864-b31e-49a1-bc21-84cb5d389277",
-      "name": "IF checkout.completed",
+      "id": "eb4bf391-d1ab-4e60-92ff-d3403765ffc5",
+      "name": "IF paiement confirmé",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
@@ -79,7 +79,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"name\": $json.data.object.metadata.domain_target } }}"
       },
-      "id": "faa3f1b5-09da-4151-a61c-fbd9859efd13",
+      "id": "0118197c-5e4d-49ad-9cec-462953777ec6",
       "name": "Cloudflare — achat domaine",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -99,7 +99,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"template_id\": 2, \"slug\": $json.data.object.metadata.domain_target.split('.')[0], \"title\": $json.data.object.metadata.domain_target, \"domain\": $json.data.object.metadata.domain_target, \"seo\": { \"title\": $json.data.object.metadata.domain_target, \"meta_description\": \"\", \"h1\": $json.data.object.metadata.domain_target } } }}"
       },
-      "id": "fa2c5b5d-cfa2-4647-9cae-5b434cce1f4a",
+      "id": "5f585548-edd9-497b-9fc8-18f4d0c84b64",
       "name": "WP — map domaine",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -116,7 +116,7 @@
           "queryReplacement": "={{ $('Webhook Stripe').item.json.body.data.object.metadata.domain_target }},{{ $json.blog_id }}"
         }
       },
-      "id": "d4d30d86-798c-40b8-9817-6a63584c3787",
+      "id": "c5c370ca-2446-439b-ace1-0737478e1eca",
       "name": "Postgres — client_domains",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
@@ -143,7 +143,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"subscriber_email\": $('Webhook Stripe').item.json.body.data.object.customer_details.email, \"template_id\": 3, \"data\": { \"domain\": $('Webhook Stripe').item.json.body.data.object.metadata.domain_target } } }}"
       },
-      "id": "e288a36a-af32-40fa-b5e7-c7bbe5a8a93f",
+      "id": "061f7bb0-0207-424a-b0a2-c19d77637ceb",
       "name": "Listmonk — livraison",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -154,7 +154,7 @@
     },
     {
       "parameters": {},
-      "id": "228beb7e-f5b3-4b8b-acf9-9fa6b22ab839",
+      "id": "88219744-a2a4-4678-b59e-3c9b767da0aa",
       "name": "Ignorer",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
@@ -180,14 +180,14 @@
       "main": [
         [
           {
-            "node": "IF checkout.completed",
+            "node": "IF paiement confirmé",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "IF checkout.completed": {
+    "IF paiement confirmé": {
       "main": [
         [
           {

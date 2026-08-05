@@ -104,15 +104,39 @@ avec `STRIPE_WEBHOOK_SECRET`) dans le premier node.
 
 | # | Node | Rôle |
 |---|------|------|
-| 1 | **Webhook** `POST /webhook/stripe` | reçoit `checkout.session.completed` |
+| 1 | **Webhook** `POST /webhook/stripe` | abonner à `checkout.session.completed` **+** `checkout.session.async_payment_succeeded` |
 | 2 | **Function — verify sig** | HMAC SHA-256 sur le raw body ; rejette si invalide |
-| 3 | **IF** `type == checkout.session.completed` | filtre |
+| 3 | **IF** `data.object.payment_status == "paid"` | ne provisionne QUE si réellement payé (voir Paiements locaux) |
 | 4 | **HTTP Request → Cloudflare/Namecheap** | achète `metadata.domain_target` (TLD selon pays), crée l'enregistrement A → IP du VPS |
 | 5 | **HTTP Request → WP Provisioner** | rappelle `/wp-json/oueb/v1/sites` (ou un PATCH) avec `domain` = domaine acheté → mappe `wp_blogs.domain` |
 | 6 | **Postgres (n8n) INSERT** | `client_domains(domain, blog_id, active=true)` — **table lue par tls-authorize** |
 | 7 | **HTTP Request → Listmonk** | email de livraison (identifiants + URL finale) |
 
 ---
+
+## Paiements locaux (TWINT / Konbini)
+
+Les méthodes locales sont pilotées par la **devise** via les *automatic payment
+methods* de Stripe : activez-les une fois dans le Dashboard (Settings → Payment
+methods), et un Payment Link en CHF proposera TWINT, en JPY proposera Konbini —
+sans paramètre par requête. `payment_methods` par pays (dans
+`config/country_matrix.yaml`) documente ce qu'il faut activer.
+
+| Marché | Méthode locale | Devise requise | Nature |
+|--------|----------------|----------------|--------|
+| 🇨🇭 CH / 🇱🇮 LI | **TWINT** | CHF ✓ | immédiat |
+| 🇯🇵 JP | **Konbini** (paiement en supérette) | JPY ✓ | **asynchrone** |
+| 🇲🇨 MC | carte (SEPA/Bancontact en option) | EUR | immédiat |
+| 🇸🇬 SG | carte | — | PayNow exigerait du SGD (on facture en USD) |
+
+> ⚠️ **Konbini est asynchrone.** À la validation du checkout, Stripe émet
+> `checkout.session.completed` avec `payment_status: "unpaid"` (le client a juste
+> reçu un bon à payer en konbini sous quelques jours). Le paiement réel déclenche
+> ensuite `checkout.session.async_payment_succeeded`. **Le Workflow 2 provisionne
+> uniquement quand `payment_status == "paid"`**, ce qui couvre carte/TWINT
+> (immédiat) et Konbini (au paiement effectif) — jamais un site livré avant
+> encaissement. Pensez aussi à `checkout.session.async_payment_failed` (voucher
+> expiré) pour purger le lead.
 
 ## Workflow 3 — tls-authorize (endpoint `ask` de Caddy)
 

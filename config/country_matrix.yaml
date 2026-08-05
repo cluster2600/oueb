@@ -14,6 +14,7 @@ CH:
   lang: de
   prompt_key: ch_de              # Suisse alémanique par défaut (voir note région)
   stripe_price_id: price_CH_chf_500
+  payment_methods: [card, twint] # TWINT = CHF uniquement, paiement immédiat
   domain_tlds: [".ch", ".swiss"]
   # Suisse multilingue : router aussi sur la région si connue
   # (Romandie -> ch_fr, Tessin -> ch_it). Défaut = ch_de.
@@ -26,6 +27,7 @@ LI:
   lang: de
   prompt_key: li_de              # allemand formel, Hochdeutsch, adresse "Sie"
   stripe_price_id: price_LI_chf_500
+  payment_methods: [card, twint] # TWINT couvre CH + LI (zone CHF)
   domain_tlds: [".li"]
 
 MC:
@@ -36,6 +38,7 @@ MC:
   lang: fr
   prompt_key: mc_fr              # français soutenu, vouvoiement, registre luxe
   stripe_price_id: price_MC_eur_500
+  payment_methods: [card]        # + Bancontact/SEPA possibles si pertinents (EUR)
   domain_tlds: [".mc", ".com"]
 
 SG:
@@ -46,6 +49,7 @@ SG:
   lang: en
   prompt_key: sg_en              # anglais professionnel international
   stripe_price_id: price_SG_usd_500
+  payment_methods: [card]        # PayNow = SGD uniquement -> incompatible avec USD
   domain_tlds: [".sg", ".com.sg"]
 
 JP:
@@ -56,4 +60,5 @@ JP:
   lang: ja
   prompt_key: jp_keigo           # 敬語 obligatoire (尊敬語 / 謙譲語 / 丁寧語)
   stripe_price_id: price_JP_jpy_79800
+  payment_methods: [card, konbini]  # Konbini = JPY, ASYNCHRONE (provisionner sur paid)
   domain_tlds: [".jp", ".co.jp"]
