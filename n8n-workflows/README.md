@@ -1,8 +1,24 @@
 # Workflows n8n
 
-Trois workflows. Importez-les depuis l'UI (`https://$MAIN_DOMAIN/n8n/`). Les secrets
-(Stripe, Cloudflare, WP, Scraper, Listmonk) arrivent par variables d'environnement
-du conteneur n8n (voir `.env`), lues via `{{$env.XXX}}`.
+Trois workflows **importables** (JSON) — dans l'UI (`https://$MAIN_DOMAIN/n8n/`) :
+*Workflows → Import from File*.
+
+| Fichier | Workflow |
+|---------|----------|
+| [`1-outreach.json`](1-outreach.json) | Scraping → Zefix (CH) → Country Router → Ollama → WP → Stripe → Listmonk |
+| [`2-provisioning.json`](2-provisioning.json) | Webhook Stripe → domaine → mapping WP → `client_domains` → livraison |
+| [`3-tls-authorize.json`](3-tls-authorize.json) | Endpoint `ask` de Caddy (autorise le TLS On-Demand) |
+
+Après import : assignez les credentials (Basic Auth WP, Postgres), activez chaque
+workflow, et vérifiez que `WEBHOOK_URL` correspond à `https://$MAIN_DOMAIN/`. Les
+secrets (Stripe, Cloudflare, WP, Scraper, Listmonk) arrivent par variables
+d'environnement du conteneur n8n (voir `.env`), lues via `{{$env.XXX}}`.
+
+> **Enrichissement Zefix (CH)** : un node HTTP « Zefix enrich (CH) » interroge le
+> registre du commerce suisse (`config/registries.md`) avant le Country Router. Il
+> valide l'entité, récupère l'UID (facturation) et le **canton → langue**
+> (`GE/VD/VS/NE/JU/FR → ch_fr`, `TI → ch_it`, sinon `ch_de`). En `onError:
+> continueRegularOutput` : hors CH, le workflow continue sans enrichissement.
 
 ```mermaid
 flowchart LR

@@ -47,7 +47,8 @@ oueb/
 │   └── requirements.txt
 ├── config/
 │   ├── country_matrix.yaml       # devise/locale/prompt/prix par pays
-│   └── prompts.md                # profils LLM (keigo JP, allemand LI, …)
+│   ├── prompts.md                # profils LLM (keigo JP, allemand LI, ch_fr/it…)
+│   └── registries.md             # Zefix (CH) + registres officiels JP/SG/LI/MC
 ├── listmonk/config.toml          # bootstrap Listmonk (SES via UI)
 └── docs/
     ├── architecture.md           # schémas Mermaid détaillés
