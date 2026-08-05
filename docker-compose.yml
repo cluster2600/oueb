@@ -1,0 +1,194 @@
+name: oueb
+
+# Usine logicielle self-hosted : n8n + scraper + Ollama + WordPress MultiSite +
+# Listmonk + Caddy (On-Demand TLS). Un seul point d'entrée réseau : Caddy (80/443).
+# Tout le reste vit sur le réseau `internal` (non exposé).
+
+x-common: &common
+  restart: unless-stopped
+
+networks:
+  edge:
+  internal:
+    internal: true          # aucun accès direct depuis l'extérieur
+
+volumes:
+  caddy_data:
+  caddy_config:
+  n8n_data:
+  pg_data:
+  listmonk_uploads:
+  wp_data:
+  wpdb_data:
+  ollama_data:
+
+services:
+  # --------------------------------------------------------------------- Caddy
+  caddy:
+    image: caddy:2.8-alpine
+    <<: *common
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"       # HTTP/3
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL}
+      MAIN_DOMAIN: ${MAIN_DOMAIN}
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data     # certs Let's Encrypt persistés ICI (ne pas perdre)
+      - caddy_config:/config
+    networks: [edge, internal]
+    depends_on: [wordpress, n8n, listmonk]
+
+  # ----------------------------------------------------------------- PostgreSQL
+  # Une seule instance, deux bases (n8n + listmonk) créées par init.sql.
+  postgres:
+    image: postgres:16-alpine
+    <<: *common
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ------------------------------------------------------------------------ n8n
+  n8n:
+    image: n8nio/n8n:1.62.1
+    <<: *common
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: n8n
+      DB_POSTGRESDB_USER: ${PG_USER}
+      DB_POSTGRESDB_PASSWORD: ${PG_PASSWORD}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      N8N_HOST: ${MAIN_DOMAIN}
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: https
+      N8N_PATH: /n8n/
+      WEBHOOK_URL: https://${MAIN_DOMAIN}/
+      N8N_PROXY_HOPS: "1"          # derrière Caddy
+      GENERIC_TIMEZONE: Europe/Zurich
+      # Secrets fournisseurs injectés via .env (Stripe, Cloudflare, SES, WP)
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
+      WP_APP_USER: ${WP_APP_USER}
+      WP_APP_PASSWORD: ${WP_APP_PASSWORD}
+      SCRAPER_TOKEN: ${SCRAPER_TOKEN}
+      LISTMONK_API_USER: ${LISTMONK_API_USER}
+      LISTMONK_API_TOKEN: ${LISTMONK_API_TOKEN}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n-workflows:/workflows:ro
+    networks: [internal]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  # ------------------------------------------------------------------- Listmonk
+  listmonk:
+    image: listmonk/listmonk:v3.0.0
+    <<: *common
+    # --upgrade applique les migrations au démarrage ; l'install initiale se fait
+    # une fois à la main : docker compose run --rm listmonk ./listmonk --install --yes
+    command: ["sh", "-c", "./listmonk --upgrade --yes || true; ./listmonk"]
+    environment:
+      TZ: Europe/Zurich
+      LISTMONK_app__address: "0.0.0.0:9000"
+      LISTMONK_db__host: postgres
+      LISTMONK_db__port: "5432"
+      LISTMONK_db__user: ${PG_USER}
+      LISTMONK_db__password: ${PG_PASSWORD}
+      LISTMONK_db__database: listmonk
+      LISTMONK_db__ssl_mode: disable
+      LISTMONK_ADMIN_USER: ${LISTMONK_API_USER}
+      LISTMONK_ADMIN_PASSWORD: ${LISTMONK_ADMIN_PASSWORD}
+    volumes:
+      - listmonk_uploads:/listmonk/uploads
+      - ./listmonk/config.toml:/listmonk/config.toml:ro
+    networks: [internal]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  # --------------------------------------------------------- WordPress MultiSite
+  wpdb:
+    image: mariadb:11
+    <<: *common
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: ${WP_DB_USER}
+      MARIADB_PASSWORD: ${WP_DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${WP_DB_ROOT_PASSWORD}
+    volumes:
+      - wpdb_data:/var/lib/mysql
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  wordpress:
+    image: wordpress:6.6-php8.3-apache
+    <<: *common
+    environment:
+      WORDPRESS_DB_HOST: wpdb
+      WORDPRESS_DB_USER: ${WP_DB_USER}
+      WORDPRESS_DB_PASSWORD: ${WP_DB_PASSWORD}
+      WORDPRESS_DB_NAME: wordpress
+      # Multisite en sous-domaines + domaines mappés (sunrise). Voir README §Bootstrap :
+      # ces constantes MULTISITE ne s'activent qu'APRÈS `wp core multisite-convert`.
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_ALLOW_MULTISITE', true);
+        if (getenv('OUEB_MULTISITE_READY') === '1') {
+          define('MULTISITE', true);
+          define('SUBDOMAIN_INSTALL', true);
+          define('DOMAIN_CURRENT_SITE', getenv('MAIN_DOMAIN'));
+          define('PATH_CURRENT_SITE', '/');
+          define('SITE_ID_CURRENT_SITE', 1);
+          define('BLOG_ID_CURRENT_SITE', 1);
+          define('SUNRISE', 'on');
+        }
+        define('WP_HOME',    'https://' . ($$_SERVER['HTTP_HOST'] ?? getenv('MAIN_DOMAIN')));
+        define('WP_SITEURL', 'https://' . ($$_SERVER['HTTP_HOST'] ?? getenv('MAIN_DOMAIN')));
+        $$_SERVER['HTTPS'] = 'on';   // Caddy termine le TLS
+      OUEB_MULTISITE_READY: ${OUEB_MULTISITE_READY:-0}
+      MAIN_DOMAIN: ${MAIN_DOMAIN}
+    volumes:
+      - wp_data:/var/www/html
+      - ./wordpress-plugin/oueb-provisioner.php:/var/www/html/wp-content/mu-plugins/oueb-provisioner.php:ro
+      - ./docker/wordpress/sunrise.php:/var/www/html/wp-content/sunrise.php:ro
+    networks: [internal]
+    depends_on:
+      wpdb: { condition: service_healthy }
+
+  # ------------------------------------------------------------- Scraper (leads)
+  scraper:
+    build: ./scraper
+    <<: *common
+    environment:
+      SCRAPER_TOKEN: ${SCRAPER_TOKEN}
+    shm_size: "1gb"          # Chromium a besoin de /dev/shm
+    networks: [internal]
+
+  # ------------------------------------------------------------- LLM auto-hébergé
+  ollama:
+    image: ollama/ollama:latest
+    <<: *common
+    volumes:
+      - ollama_data:/root/.ollama
+    networks: [internal]
+    # GPU optionnel :
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices: [{ driver: nvidia, count: all, capabilities: [gpu] }]

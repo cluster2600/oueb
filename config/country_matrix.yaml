@@ -1,0 +1,59 @@
+# Matrice pays — source de vérité du "Country Router" n8n.
+# code ISO 3166-1 alpha-2 -> devise / locale / langue / profil de prompt /
+# Stripe Price ID / TLD suggéré pour l'achat de domaine.
+#
+# Prix : 500 dans la devise locale SAUF le Japon. 500 JPY ≈ 3 USD n'a aucun sens
+# face aux 500 CHF/EUR/USD — on aligne sur la parité de valeur (~500 USD) avec un
+# prix psychologique japonais : 79 800 JPY. Ajustez à votre positionnement.
+
+CH:
+  country_name: Suisse
+  currency: CHF
+  amount_minor: 50000            # 500.00 CHF (Stripe = centimes)
+  locale: de-CH
+  lang: de
+  prompt_key: ch_de              # Suisse alémanique par défaut (voir note région)
+  stripe_price_id: price_CH_chf_500
+  domain_tlds: [".ch", ".swiss"]
+  # Suisse multilingue : router aussi sur la région si connue
+  # (Romandie -> ch_fr, Tessin -> ch_it). Défaut = ch_de.
+
+LI:
+  country_name: Liechtenstein
+  currency: CHF
+  amount_minor: 50000            # 500.00 CHF
+  locale: de-LI
+  lang: de
+  prompt_key: li_de              # allemand formel, Hochdeutsch, adresse "Sie"
+  stripe_price_id: price_LI_chf_500
+  domain_tlds: [".li"]
+
+MC:
+  country_name: Monaco
+  currency: EUR
+  amount_minor: 50000            # 500.00 EUR
+  locale: fr-MC
+  lang: fr
+  prompt_key: mc_fr              # français soutenu, vouvoiement, registre luxe
+  stripe_price_id: price_MC_eur_500
+  domain_tlds: [".mc", ".com"]
+
+SG:
+  country_name: Singapore
+  currency: USD                  # aligné sur les 4 devises annoncées (USD)
+  amount_minor: 50000            # 500.00 USD
+  locale: en-SG
+  lang: en
+  prompt_key: sg_en              # anglais professionnel international
+  stripe_price_id: price_SG_usd_500
+  domain_tlds: [".sg", ".com.sg"]
+
+JP:
+  country_name: Japan
+  currency: JPY
+  amount_minor: 79800            # 79 800 JPY — JPY est une devise SANS décimale
+  locale: ja-JP
+  lang: ja
+  prompt_key: jp_keigo           # 敬語 obligatoire (尊敬語 / 謙譲語 / 丁寧語)
+  stripe_price_id: price_JP_jpy_79800
+  domain_tlds: [".jp", ".co.jp"]

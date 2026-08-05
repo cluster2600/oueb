@@ -1,0 +1,9 @@
+.env
+*.pyc
+__pycache__/
+seo.json
+scraper/.venv/
+scripts/.venv/
+# volumes / dumps éventuels montés localement
+data/
+*.sql.gz

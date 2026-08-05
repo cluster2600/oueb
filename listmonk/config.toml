@@ -1,0 +1,28 @@
+# Listmonk — la config runtime vit surtout en base (UI Admin). Ce fichier ne porte
+# que le bootstrap. Le SMTP Amazon SES se configure dans l'UI : Settings > SMTP.
+[app]
+address = "0.0.0.0:9000"
+admin_username = "$LISTMONK_API_USER"
+admin_password = "$LISTMONK_ADMIN_PASSWORD"
+
+[db]
+host = "postgres"
+port = 5432
+user = "$PG_USER"
+password = "$PG_PASSWORD"
+database = "listmonk"
+ssl_mode = "disable"
+max_open = 25
+max_idle = 25
+
+# --- Amazon SES (à renseigner dans l'UI Admin > Settings > SMTP) --------------
+# Host      : email-smtp.eu-central-1.amazonaws.com   (région de votre choix)
+# Port      : 587           (STARTTLS)
+# Username  : <SES SMTP username>   (≠ AWS access key ; généré dans SES > SMTP settings)
+# Password  : <SES SMTP password>
+# Max conns : 10  |  Retries : 2  |  TLS : STARTTLS
+# From      : envois@votre-domaine-verifie   (domaine VÉRIFIÉ dans SES, hors sandbox)
+#
+# Prérequis délivrabilité (obligatoire) : SPF + DKIM + DMARC sur le domaine
+# d'envoi, sortie du "sandbox" SES, et un lien de désinscription actif (Listmonk
+# l'ajoute automatiquement — ne le retirez jamais). Voir docs/compliance.md.
