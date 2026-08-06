@@ -10,7 +10,7 @@
           "rawBody": true
         }
       },
-      "id": "d41f232d-f82e-4a0d-857c-44cb540bef52",
+      "id": "b2eead2e-0857-43ff-bfc6-d15e019e78f5",
       "name": "Webhook Stripe",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -23,7 +23,7 @@
       "parameters": {
         "jsCode": "// Vérifie la signature Stripe (HMAC SHA-256 sur le corps brut).\nconst crypto = require('crypto');\nconst secret = $env.STRIPE_WEBHOOK_SECRET;\nconst sigHeader = $json.headers['stripe-signature'] || '';\nconst raw = $json.body;                    // Webhook en mode \"raw body\"\nconst parts = Object.fromEntries(sigHeader.split(',').map(p => p.split('=')));\nconst signed = parts.t + '.' + (typeof raw === 'string' ? raw : JSON.stringify(raw));\nconst expected = crypto.createHmac('sha256', secret).update(signed).digest('hex');\nif (expected !== parts.v1) { throw new Error('Signature Stripe invalide'); }\nconst event = typeof raw === 'string' ? JSON.parse(raw) : raw;\nreturn [{ json: event }];\n"
       },
-      "id": "7ee3af55-d39e-487f-89c5-82eb54533277",
+      "id": "a5a64c39-08b5-45c2-81e4-1cbb879da6d8",
       "name": "Vérifier signature",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -52,7 +52,7 @@
           ]
         }
       },
-      "id": "f2ebae8e-20cc-4dbd-8a1e-1c17e05f36ab",
+      "id": "80b7a188-6e31-44ac-ad66-7b2cab7cc156",
       "name": "IF paiement confirmé",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -79,7 +79,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"name\": $json.data.object.metadata.domain_target } }}"
       },
-      "id": "27bac05b-4f9a-4e21-981d-34ece5d095ee",
+      "id": "3d9019d1-fddd-4f2d-8ffd-3b446ecabeb9",
       "name": "Cloudflare — achat domaine",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -99,7 +99,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"template_id\": 2, \"slug\": $json.data.object.metadata.domain_target.split('.')[0], \"title\": $json.data.object.metadata.domain_target, \"domain\": $json.data.object.metadata.domain_target, \"seo\": { \"title\": $json.data.object.metadata.domain_target, \"meta_description\": \"\", \"h1\": $json.data.object.metadata.domain_target } } }}"
       },
-      "id": "4d2e4101-76ca-4345-a3c2-0c4baa406e89",
+      "id": "0f19e413-ca1f-4455-aaa7-740152b08244",
       "name": "WP — map domaine",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -116,7 +116,7 @@
           "queryReplacement": "={{ $('Webhook Stripe').item.json.body.data.object.metadata.domain_target }},{{ $json.blog_id }}"
         }
       },
-      "id": "382f6490-bd0c-45b1-baf4-9504a4dc3307",
+      "id": "896ba9e0-b23f-43ff-ade5-0b047ea29479",
       "name": "Postgres — client_domains",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
@@ -143,7 +143,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"subscriber_email\": $('Webhook Stripe').item.json.body.data.object.customer_details.email, \"template_id\": 3, \"data\": { \"domain\": $('Webhook Stripe').item.json.body.data.object.metadata.domain_target } } }}"
       },
-      "id": "9d8e0e6a-c055-4a00-8379-ce2283ee8d50",
+      "id": "0cd0f74c-db84-48db-8c52-37cff6513443",
       "name": "Listmonk — livraison",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -154,7 +154,7 @@
     },
     {
       "parameters": {},
-      "id": "0c3ce166-26ab-4658-9530-174bac5f49a7",
+      "id": "0280366d-e246-410e-b952-35e5b506cfe6",
       "name": "Ignorer",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,

@@ -57,6 +57,18 @@ API officielle et gratuite de l'Agence nationale des impôts.
 
 - Consultable en ligne, **pas d'API ouverte**. Validation manuelle.
 
+## 🇺🇸 États-Unis — pas de registre national
+
+- L'enregistrement des sociétés est **par État** (Secretary of State) : aucune API
+  fédérale unique et gratuite. Data.gov agrège partiellement, sans couverture fiable.
+- Agrégateur commercial : **OpenCorporates** (`https://api.opencorporates.com`,
+  `GET /v0.4/companies/search?q=...&api_token=...`) — **payant** au-delà d'un usage
+  minimal. Node placeholder **désactivé** dans `1-outreach.json`
+  (`OpenCorporates enrich (US) — PLACEHOLDER`, env `OPENCORPORATES_API_TOKEN`).
+- En pratique pour les USA : s'appuyer sur les données Google Places (le lead a
+  déjà nom/adresse) et valider au cas par cas ; l'enrichissement registre n'est pas
+  bloquant côté cold-email (CAN-SPAM n'exige pas d'immatriculation vérifiée).
+
 ---
 
 ### Récapitulatif d'intégration
@@ -68,3 +80,4 @@ API officielle et gratuite de l'Agence nationale des impôts.
 | SG | ACRA / data.gov.sg | ✅ gratuite | à activer |
 | LI | Handelsregister | ❌ | manuel |
 | MC | RCI | ❌ | manuel |
+| US | Secretary of State (par État) / OpenCorporates | ⚠️ payant | placeholder |

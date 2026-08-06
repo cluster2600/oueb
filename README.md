@@ -4,10 +4,10 @@ Chaîne automatisée : **scraping de leads sans site → génération IA localis
 clonage WordPress MultiSite → Payment Link Stripe multi-devises → cold email
 Listmonk/SES → TLS à la volée Caddy** sur le domaine du client après paiement.
 
-Marchés cibles : 🇨🇭 Suisse · 🇱🇮 Liechtenstein · 🇲🇨 Monaco · 🇸🇬 Singapour · 🇯🇵 Japon.
-Prix : 500 CHF / EUR / SGD et **79 800 JPY** (500 JPY ≈ 3 USD — voir
+Marchés cibles : 🇨🇭 Suisse · 🇱🇮 Liechtenstein · 🇲🇨 Monaco · 🇸🇬 Singapour · 🇯🇵 Japon · 🇺🇸 USA.
+Prix : 500 CHF / EUR / SGD / USD et **79 800 JPY** (500 JPY ≈ 3 USD — voir
 `config/country_matrix.yaml`). Paiements locaux : TWINT (CH/LI), PayNow (SG),
-Konbini (JP).
+Konbini (JP), ACH/Link (US).
 
 100% OSS : **n8n · Playwright · Ollama · WordPress MultiSite · Listmonk · Caddy**.
 Un seul point d'entrée réseau (Caddy). Diagrammes complets : [`docs/architecture.md`](docs/architecture.md).

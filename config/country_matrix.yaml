@@ -62,3 +62,17 @@ JP:
   stripe_price_id: price_JP_jpy_79800
   payment_methods: [card, konbini]  # Konbini = JPY, ASYNCHRONE (provisionner sur paid)
   domain_tlds: [".jp", ".co.jp"]
+
+US:
+  country_name: United States
+  currency: USD
+  amount_minor: 50000            # 500.00 USD
+  locale: en-US
+  lang: en
+  prompt_key: us_en              # anglais américain, direct, orthographe US
+  stripe_price_id: price_US_usd_500
+  payment_methods: [card, link, us_bank_account]  # ACH = asynchrone -> gate 'paid'
+  domain_tlds: [".com", ".us"]
+  # Marché volume (≠ niche premium des 5 autres). CAN-SPAM = cadre cold-email le
+  # plus permissif (opt-out) ; attention au nexus fiscal par État. Pas de registre
+  # national gratuit -> enrichissement OpenCorporates (payant, placeholder n8n).

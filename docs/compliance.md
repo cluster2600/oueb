@@ -11,6 +11,7 @@ ignorées (comptes SES suspendus, domaine blacklisté, plaintes, sanctions).
 | **CH/LI** 🇨🇭🇱🇮 | LCD/UWG art. 3(1)(o) + nLPD | Publicité de masse **sans consentement = déloyale**. B2B toléré si lien pro réel + opt-out immédiat. |
 | **MC** 🇲🇨 | RGPD (Monaco aligné) + loi 1.165 | Base légale + intérêt légitime documenté + désinscription. |
 | **SG** 🇸🇬 | PDPA + Spam Control Act | Opt-out fonctionnel obligatoire, en-tête `<UNSUBSCRIBE>`, pas de numéro trompeur. |
+| **US** 🇺🇸 | CAN-SPAM Act | **Le plus permissif** : modèle opt-**out**. En-têtes non trompeurs, objet honnête, **adresse postale physique** dans chaque email, opt-out honoré ≤ 10 jours ouvrés. Pas de consentement préalable requis. Attention **nexus fiscal par État** sur la vente. |
 
 **Conséquence d'ingénierie :** ciblez **B2B uniquement** (établissements, pas
 particuliers), gardez un opt-out Listmonk actif (ne jamais retirer `{{ UnsubscribeURL }}`),
