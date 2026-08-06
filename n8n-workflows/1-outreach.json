@@ -12,7 +12,7 @@
           ]
         }
       },
-      "id": "6133f1ad-a8cf-4cf2-9cd5-eeffca623fd5",
+      "id": "178275dd-8827-471c-afe0-543d33173cdc",
       "name": "Schedule (quotidien 09h)",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -53,7 +53,7 @@
         },
         "options": {}
       },
-      "id": "ec95a5f5-7155-4d87-9580-12e7a4583ce2",
+      "id": "56ae4ae9-807e-4b28-bcd3-ce8b0bbf23df",
       "name": "Paramètres requête",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -80,7 +80,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"query\": $json.query, \"location\": $json.location, \"country\": $json.country, \"limit\": 40 } }}"
       },
-      "id": "ba4908cb-c016-43e5-be5b-772f257d37ee",
+      "id": "d8c603c6-ad42-45b4-ac76-895fe0027a86",
       "name": "Scraper /scrape",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -94,7 +94,7 @@
         "batchSize": 1,
         "options": {}
       },
-      "id": "48042048-3f4b-4d3b-8416-3fb912540f5c",
+      "id": "4ece6f86-b3ba-41ea-9e58-002f4671f2e8",
       "name": "Loop leads",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
@@ -107,7 +107,7 @@
       "parameters": {
         "jsCode": "// Country Router (+ enrichissement registre du commerce Zefix pour la Suisse).\n// Miroir de config/country_matrix.yaml + config/prompts.md.\n// Entree : item.json = reponse Zefix (peut etre vide hors CH) ; le lead d'origine\n// est lu via $('Loop leads') pour survivre a l'appel HTTP Zefix intercalaire.\nconst MATRIX = {\n  CH: { currency:'CHF', amount_minor:50000, locale:'de-CH', lang:'de_CH',\n        prompt_key:'ch_de', stripe_price_id:'price_CH_chf_500', tld:'.ch',\n        payment_methods:['card','twint'] },\n  LI: { currency:'CHF', amount_minor:50000, locale:'de-LI', lang:'de_DE',\n        prompt_key:'li_de', stripe_price_id:'price_LI_chf_500', tld:'.li',\n        payment_methods:['card','twint'] },\n  MC: { currency:'EUR', amount_minor:50000, locale:'fr-MC', lang:'fr_FR',\n        prompt_key:'mc_fr', stripe_price_id:'price_MC_eur_500', tld:'.mc',\n        payment_methods:['card'] },\n  SG: { currency:'SGD', amount_minor:50000, locale:'en-SG', lang:'en_US',\n        prompt_key:'sg_en', stripe_price_id:'price_SG_sgd_500', tld:'.sg',\n        payment_methods:['card','paynow'] },  // PayNow = SGD, QR quasi-immédiat\n  JP: { currency:'JPY', amount_minor:79800, locale:'ja-JP', lang:'ja',\n        prompt_key:'jp_keigo', stripe_price_id:'price_JP_jpy_79800', tld:'.jp',\n        payment_methods:['card','konbini'] },  // Konbini = ASYNCHRONE (voir provisioning)\n  US: { currency:'USD', amount_minor:50000, locale:'en-US', lang:'en_US',\n        prompt_key:'us_en', stripe_price_id:'price_US_usd_500', tld:'.com',\n        payment_methods:['card','link','us_bank_account'] },  // ACH = async -> gate 'paid'\n};\nconst PROMPTS = {\n  ch_de: \"Schweizer Hochdeutsch, Sie-Form, sachlich, immer 'ss' statt 'ss'. JSON only.\",\n  ch_fr: \"Francais de Suisse romande, vouvoiement, ton sobre et factuel, sans superlatifs. JSON only.\",\n  ch_it: \"Italiano della Svizzera italiana, forma di cortesia (Lei), tono sobrio e professionale. JSON only.\",\n  li_de: \"Formelles Hochdeutsch, Sie-Form, serioes/diskret (Treuhand, Family Office). JSON only.\",\n  mc_fr: \"Francais soutenu, vouvoiement, registre luxe/confidentialite. JSON only.\",\n  sg_en: \"Professional international English (British spelling), premium B2B. JSON only.\",\n  us_en: \"Professional American English (US spelling), confident and direct, credible B2B. JSON only.\",\n  jp_keigo: \"日本語の敬語で作成。丁寧語(です・ます)で統一し、相手には尊敬語、自社には謙譲語を用いる。JSONのみ返す。\",\n};\n// Cantons romands + Tessin -> langue (Fribourg bilingue: defaut fr).\nconst CANTON_LANG = { GE:'fr', VD:'fr', VS:'fr', NE:'fr', JU:'fr', FR:'fr', TI:'it' };\nconst CH_PROMPT = { de:'ch_de', fr:'ch_fr', it:'ch_it' };\nconst CH_LANG   = { de:'de_CH', fr:'fr_CH', it:'it_CH' };\n\nconst out = [];\nfor (const item of $input.all()) {\n  const lead = $('Loop leads').item.json;\n  const c = (lead.country || '').toUpperCase();\n  const m = MATRIX[c];\n  if (!m) { continue; }\n  const row = { ...lead, ...m };\n\n  // Zefix : la reponse peut etre un tableau ou { list: [...] }.\n  const z = item.json;\n  const firm = Array.isArray(z) ? z[0] : (z && z.list ? z.list[0] : null);\n  if (c === 'CH' && firm) {\n    const canton = String(firm.canton || firm.registryOfficeCanton || '').toUpperCase();\n    const l = CANTON_LANG[canton] || 'de';\n    row.prompt_key = CH_PROMPT[l];\n    row.lang = CH_LANG[l];\n    row.canton = canton || null;\n    row.uid = firm.uid || null;                    // CHE-xxx.xxx.xxx (facturation)\n    row.official_name = firm.name || lead.name;    // raison sociale officielle\n  }\n  row.name = row.official_name || lead.name;\n  row.system_prompt = PROMPTS[row.prompt_key];\n  row.slug = (row.name || '').toLowerCase().normalize('NFKD')\n               .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);\n  row.domain_target = null;\n  out.push({ json: row });\n}\nreturn out;\n"
       },
-      "id": "2660fb4d-adb4-4ea2-ad12-be5554d2716a",
+      "id": "b48e1b66-8476-42d9-8fe8-f3410133f64a",
       "name": "Country Router",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -125,32 +125,12 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"model\": \"qwen2.5:14b-instruct\", \"stream\": false, \"format\": \"json\", \"system\": $json.system_prompt, \"prompt\": \"Etablissement: \" + $json.name + \" | \" + ($json.category||\"\") + \" | \" + ($json.address||\"\") + \". Genere le JSON one-page: title, meta_description, h1, h2[], hero_subtitle, sections[{heading,body}], cta.\" } }}"
       },
-      "id": "e707ffd9-9f58-44a8-8956-17cf511d038f",
+      "id": "95716de9-92bd-4f50-bfb8-df529a763e9f",
       "name": "Ollama (contenu+SEO)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
         1100,
-        420
-      ]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://{{ $env.MAIN_DOMAIN }}/wp-json/oueb/v1/sites",
-        "options": {},
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpBasicAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ { \"template_id\": $('Paramètres requête').item.json.template_id, \"slug\": $('Country Router').item.json.slug, \"title\": $('Country Router').item.json.name, \"lang\": $('Country Router').item.json.lang, \"seo\": JSON.parse($json.response) } }}"
-      },
-      "id": "635a03d9-af66-4198-a3f3-683cc6d999d4",
-      "name": "WP Provisioner",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1320,
         420
       ]
     },
@@ -182,12 +162,16 @@
               "value": "1"
             },
             {
-              "name": "metadata[blog_id]",
-              "value": "={{ $json.blog_id }}"
+              "name": "metadata[slug]",
+              "value": "={{ $('Country Router').item.json.slug }}"
+            },
+            {
+              "name": "metadata[project]",
+              "value": "={{ 'oueb-' + $('Country Router').item.json.slug }}"
             },
             {
               "name": "metadata[domain_target]",
-              "value": "={{ ($('Country Router').item.json.slug) + $('Country Router').item.json.tld }}"
+              "value": "={{ $('Country Router').item.json.slug + $('Country Router').item.json.tld }}"
             },
             {
               "name": "metadata[country]",
@@ -196,12 +180,93 @@
           ]
         }
       },
-      "id": "6fae5d33-7280-483d-8bda-d6dea6c6c687",
+      "id": "13274dc9-fa45-4623-a440-d9bbfdfee390",
       "name": "Stripe Payment Link",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
+        1320,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://sitegen:8080/deploy",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Sitegen-Token",
+              "value": "={{ $env.SITEGEN_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"slug\": $('Country Router').item.json.slug, \"lang\": $('Country Router').item.json.lang, \"seo\": JSON.parse($('Ollama (contenu+SEO)').item.json.response), \"pay_url\": $json.url } }}"
+      },
+      "id": "0b89b382-58ba-4a45-b9bc-fde19475b72e",
+      "name": "Sitegen — build+deploy Pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
         1540,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://twenty:3000/rest/opportunities",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.TWENTY_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"name\": $('Country Router').item.json.name, \"stage\": \"NEW\" } }}"
+      },
+      "id": "0c6c1e9e-644a-4e4a-be16-8f9609f1f44c",
+      "name": "Twenty — contact+opportunity",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://kanboard:80/jsonrpc.php",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Basic {{ $env.KANBOARD_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"createTask\", \"params\": { \"project_id\": 1, \"title\": $('Country Router').item.json.name, \"description\": \"Preview: \" + $('Sitegen — build+deploy Pages').item.json.url } } }}"
+      },
+      "id": "51603acf-30dc-425b-b0f7-1cecf44a4ddc",
+      "name": "Kanboard — nouvelle carte",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
         420
       ]
     },
@@ -215,26 +280,26 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Basic {{ $env.LISTMONK_API_USER }}:{{ $env.LISTMONK_API_TOKEN }}"
+              "value": "=Basic {{ $env.LISTMONK_API_TOKEN }}"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { \"email\": ($('Loop leads').item.json.email || \"\"), \"name\": $('Country Router').item.json.name, \"status\": \"enabled\", \"lists\": [1], \"attribs\": { \"preview_url\": $('WP Provisioner').item.json.url, \"payment_url\": $json.url, \"country\": $('Country Router').item.json.country } } }}"
+        "jsonBody": "={{ { \"email\": ($('Loop leads').item.json.email || \"\"), \"name\": $('Country Router').item.json.name, \"status\": \"enabled\", \"lists\": [1], \"attribs\": { \"preview_url\": $('Sitegen — build+deploy Pages').item.json.url, \"payment_url\": $('Stripe Payment Link').item.json.url, \"country\": $('Country Router').item.json.country } } }}"
       },
-      "id": "9d1a73e3-3a46-4ce1-9bb9-a8e410742893",
+      "id": "e1148dca-8a1b-4a0f-b9fe-8778b63f8d92",
       "name": "Listmonk (campagne perso)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1760,
+        2200,
         420
       ]
     },
     {
       "parameters": {},
-      "id": "75db2b52-1321-4c7b-8ff4-f01357198be6",
+      "id": "d20d5b5d-6ca7-4411-964a-330f0d529316",
       "name": "Fin",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
@@ -252,7 +317,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"name\": $json.name, \"activeOnly\": true } }}"
       },
-      "id": "836c47b7-6c82-41ec-aa2a-23d52e9293b5",
+      "id": "9cc0301c-52fe-4549-93e3-66332f726c95",
       "name": "Zefix enrich (CH)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -268,7 +333,7 @@
         "url": "=https://api.houjin-bangou.nta.go.jp/4/name?id={{ $env.HOUJIN_BANGO_APP_ID }}&name={{ encodeURIComponent($json.name) }}&type=12&mode=2",
         "options": {}
       },
-      "id": "90870a40-b815-4fcd-b0ed-200be759d109",
+      "id": "244cb10b-888f-4592-86ad-b15e7416f75e",
       "name": "Houjin-Bango enrich (JP) — PLACEHOLDER",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -286,7 +351,7 @@
         "url": "=https://api.opencorporates.com/v0.4/companies/search?q={{ encodeURIComponent($json.name) }}&api_token={{ $env.OPENCORPORATES_API_TOKEN }}",
         "options": {}
       },
-      "id": "90209582-8bd7-4fac-95e5-77eb15b67fd8",
+      "id": "d75da185-dc0c-48e6-aa9b-1ef51e18b8cd",
       "name": "OpenCorporates enrich (US) — PLACEHOLDER",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -315,17 +380,6 @@
       "main": [
         [
           {
-            "node": "WP Provisioner",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "WP Provisioner": {
-      "main": [
-        [
-          {
             "node": "Stripe Payment Link",
             "type": "main",
             "index": 0
@@ -334,6 +388,39 @@
       ]
     },
     "Stripe Payment Link": {
+      "main": [
+        [
+          {
+            "node": "Sitegen — build+deploy Pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sitegen — build+deploy Pages": {
+      "main": [
+        [
+          {
+            "node": "Twenty — contact+opportunity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Twenty — contact+opportunity": {
+      "main": [
+        [
+          {
+            "node": "Kanboard — nouvelle carte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kanboard — nouvelle carte": {
       "main": [
         [
           {

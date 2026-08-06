@@ -1,4 +1,5 @@
--- Crée les deux bases applicatives dans l'unique instance PostgreSQL.
--- L'utilisateur POSTGRES_USER (propriétaire) existe déjà à ce stade.
+-- Bases applicatives dans l'unique instance PostgreSQL.
 CREATE DATABASE n8n      OWNER CURRENT_USER;
 CREATE DATABASE listmonk OWNER CURRENT_USER;
+CREATE DATABASE twenty   OWNER CURRENT_USER;
+CREATE DATABASE kanboard OWNER CURRENT_USER;

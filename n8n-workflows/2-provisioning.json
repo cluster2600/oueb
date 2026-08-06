@@ -10,7 +10,7 @@
           "rawBody": true
         }
       },
-      "id": "b2eead2e-0857-43ff-bfc6-d15e019e78f5",
+      "id": "b8e11ff9-d39e-4c6e-bda1-9ff9086a4d61",
       "name": "Webhook Stripe",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -23,7 +23,7 @@
       "parameters": {
         "jsCode": "// Vérifie la signature Stripe (HMAC SHA-256 sur le corps brut).\nconst crypto = require('crypto');\nconst secret = $env.STRIPE_WEBHOOK_SECRET;\nconst sigHeader = $json.headers['stripe-signature'] || '';\nconst raw = $json.body;                    // Webhook en mode \"raw body\"\nconst parts = Object.fromEntries(sigHeader.split(',').map(p => p.split('=')));\nconst signed = parts.t + '.' + (typeof raw === 'string' ? raw : JSON.stringify(raw));\nconst expected = crypto.createHmac('sha256', secret).update(signed).digest('hex');\nif (expected !== parts.v1) { throw new Error('Signature Stripe invalide'); }\nconst event = typeof raw === 'string' ? JSON.parse(raw) : raw;\nreturn [{ json: event }];\n"
       },
-      "id": "a5a64c39-08b5-45c2-81e4-1cbb879da6d8",
+      "id": "153aaa28-b370-4b67-9adf-014b4a0a07d5",
       "name": "Vérifier signature",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -52,7 +52,7 @@
           ]
         }
       },
-      "id": "80b7a188-6e31-44ac-ad66-7b2cab7cc156",
+      "id": "a0a0105a-2106-49a6-98f9-139e5a731bdf",
       "name": "IF paiement confirmé",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -64,23 +64,23 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.cloudflare.com/client/v4/accounts/{{ $env.CF_ACCOUNT_ID }}/registrar/domains",
+        "url": "https://api.gandi.net/v5/domain/domains",
         "options": {},
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Bearer {{ $env.CLOUDFLARE_API_TOKEN }}"
+              "value": "=Apikey {{ $env.GANDI_API_KEY }}"
             }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { \"name\": $json.data.object.metadata.domain_target } }}"
+        "jsonBody": "={{ { \"fqdn\": $json.data.object.metadata.domain_target, \"duration\": 1, \"owner\": { \"country\": \"CH\", \"email\": $env.REGISTRANT_EMAIL, \"given\": \"OUEB\", \"family\": \"Operator\", \"streetaddr\": \"n/a\", \"city\": \"n/a\", \"zip\": \"0000\", \"phone\": \"+41.000000000\", \"type\": \"company\", \"orgname\": \"OUEB\" } } }}"
       },
-      "id": "3d9019d1-fddd-4f2d-8ffd-3b446ecabeb9",
-      "name": "Cloudflare — achat domaine",
+      "id": "bafdd085-1dce-442e-b40b-5a5c7c987f6e",
+      "name": "Gandi — achat domaine",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -91,16 +91,23 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://{{ $env.MAIN_DOMAIN }}/wp-json/oueb/v1/sites",
+        "url": "http://sitegen:8080/attach-domain",
         "options": {},
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Sitegen-Token",
+              "value": "={{ $env.SITEGEN_TOKEN }}"
+            }
+          ]
+        },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { \"template_id\": 2, \"slug\": $json.data.object.metadata.domain_target.split('.')[0], \"title\": $json.data.object.metadata.domain_target, \"domain\": $json.data.object.metadata.domain_target, \"seo\": { \"title\": $json.data.object.metadata.domain_target, \"meta_description\": \"\", \"h1\": $json.data.object.metadata.domain_target } } }}"
+        "jsonBody": "={{ { \"project\": $('Webhook Stripe').item.json.body.data.object.metadata.project, \"domain\": $('Webhook Stripe').item.json.body.data.object.metadata.domain_target } }}"
       },
-      "id": "0f19e413-ca1f-4455-aaa7-740152b08244",
-      "name": "WP — map domaine",
+      "id": "fc191473-ac51-4aa7-8df4-16a79d0406ae",
+      "name": "Sitegen — attach domaine (Pages)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -110,18 +117,55 @@
     },
     {
       "parameters": {
-        "operation": "executeQuery",
-        "query": "INSERT INTO client_domains(domain, blog_id, active) VALUES ($1, $2, true) ON CONFLICT (domain) DO UPDATE SET active=true",
-        "options": {
-          "queryReplacement": "={{ $('Webhook Stripe').item.json.body.data.object.metadata.domain_target }},{{ $json.blog_id }}"
-        }
+        "method": "PUT",
+        "url": "=https://api.gandi.net/v5/livedns/domains/{{ $('Webhook Stripe').item.json.body.data.object.metadata.domain_target }}/records/@/CNAME",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Apikey {{ $env.GANDI_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"rrset_values\": [ $json.cname_target + \".\" ] } }}"
       },
-      "id": "896ba9e0-b23f-43ff-ade5-0b047ea29479",
-      "name": "Postgres — client_domains",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6,
+      "id": "9891fe50-ec10-4ae6-8787-0a3c2f2075cb",
+      "name": "Gandi — DNS CNAME vers Pages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         1100,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://kanboard:80/jsonrpc.php",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Basic {{ $env.KANBOARD_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"createTask\", \"params\": { \"project_id\": 1, \"column_id\": 4, \"title\": \"Livré: \" + $('Webhook Stripe').item.json.body.data.object.metadata.domain_target } } }}"
+      },
+      "id": "28fd18e6-35c2-4699-8569-1506e9b6dbfc",
+      "name": "Kanboard — carte livrée",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
         220
       ]
     },
@@ -135,7 +179,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "=Basic {{ $env.LISTMONK_API_USER }}:{{ $env.LISTMONK_API_TOKEN }}"
+              "value": "=Basic {{ $env.LISTMONK_API_TOKEN }}"
             }
           ]
         },
@@ -143,18 +187,18 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"subscriber_email\": $('Webhook Stripe').item.json.body.data.object.customer_details.email, \"template_id\": 3, \"data\": { \"domain\": $('Webhook Stripe').item.json.body.data.object.metadata.domain_target } } }}"
       },
-      "id": "0cd0f74c-db84-48db-8c52-37cff6513443",
+      "id": "507fdba2-0548-4922-a465-72bd58ac512a",
       "name": "Listmonk — livraison",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1320,
+        1540,
         220
       ]
     },
     {
       "parameters": {},
-      "id": "0280366d-e246-410e-b952-35e5b506cfe6",
+      "id": "05bed4a2-e355-433b-aa93-28f16e3d0faf",
       "name": "Ignorer",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
@@ -191,7 +235,7 @@
       "main": [
         [
           {
-            "node": "Cloudflare — achat domaine",
+            "node": "Gandi — achat domaine",
             "type": "main",
             "index": 0
           }
@@ -205,29 +249,40 @@
         ]
       ]
     },
-    "Cloudflare — achat domaine": {
+    "Gandi — achat domaine": {
       "main": [
         [
           {
-            "node": "WP — map domaine",
+            "node": "Sitegen — attach domaine (Pages)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "WP — map domaine": {
+    "Sitegen — attach domaine (Pages)": {
       "main": [
         [
           {
-            "node": "Postgres — client_domains",
+            "node": "Gandi — DNS CNAME vers Pages",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Postgres — client_domains": {
+    "Gandi — DNS CNAME vers Pages": {
+      "main": [
+        [
+          {
+            "node": "Kanboard — carte livrée",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kanboard — carte livrée": {
       "main": [
         [
           {

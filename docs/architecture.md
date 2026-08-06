@@ -1,6 +1,6 @@
 # Architecture
 
-## Flux de données (scraping → vente → TLS à la volée)
+## Flux de données (scraping → génération statique → vente → livraison)
 
 ```mermaid
 flowchart TD
@@ -8,70 +8,70 @@ flowchart TD
     GM["Google Maps"]
   end
 
-  subgraph VPS["VPS auto-hébergé — Docker (réseau interne)"]
-    CADDY["Caddy<br/>reverse proxy + On-Demand TLS"]
+  subgraph VPS["VPS — control-plane (Docker, réseau interne)"]
+    CADDY["Caddy<br/>reverse proxy back-office"]
     N8N["n8n<br/>orchestrateur / webhooks"]
     SCR["Scraper<br/>Python + Playwright"]
     OLL["Ollama<br/>LLM local"]
-    WP["WordPress MultiSite<br/>+ REST API"]
+    SG["sitegen<br/>build statique + wrangler"]
     LM["Listmonk"]
-    PG[("PostgreSQL<br/>n8n + listmonk + client_domains")]
-    MDB[("MariaDB<br/>WordPress")]
+    TW["Twenty CRM"]
+    KB["Kanboard"]
+    PG[("PostgreSQL<br/>n8n·listmonk·twenty·kanboard")]
+    RD[("Redis<br/>Twenty")]
   end
 
-  STRIPE["Stripe API<br/>multi-devises"]
+  ZEFIX["Zefix (CH)"]
+  STRIPE["Stripe<br/>multi-devises + TWINT/PayNow/Konbini"]
   SES["Amazon SES"]
-  DNS["Cloudflare / Namecheap API"]
+  GANDI["Gandi API<br/>registrar + LiveDNS"]
+  CFP["Cloudflare Pages<br/>hébergement + TLS + CDN mondial"]
   CLIENT["Prospect / Client"]
 
   GM -->|"fiches sans site"| SCR
   N8N -->|"POST /scrape"| SCR
-  SCR -->|"leads JSON"| N8N
-  N8N -->|"Country Router<br/>CH·LI·MC·SG·JP"| OLL
-  OLL -->|"contenu + SEO localisés<br/>(keigo JP / de LI)"| N8N
-  N8N -->|"REST: subsite + inject"| WP
-  N8N -->|"Payment Link<br/>devise locale"| STRIPE
-  N8N -->|"campagne perso<br/>(preview + lien Stripe)"| LM
-  LM -->|"SMTP"| SES
-  SES -->|"cold email"| CLIENT
+  SCR -->|"leads"| N8N
+  N8N -->|"CH → validation + canton"| ZEFIX --> N8N
+  N8N -->|"Country Router<br/>CH·LI·MC·SG·JP·US"| OLL
+  OLL -->|"contenu + SEO localisés"| N8N
+  N8N -->|"Payment Link (devise + méthode locale)"| STRIPE
+  N8N -->|"POST /deploy (slug, seo, pay_url)"| SG
+  SG -->|"wrangler pages deploy"| CFP
+  N8N -->|"opportunity"| TW
+  N8N -->|"carte"| KB
+  N8N -->|"campagne perso (preview + lien Stripe)"| LM
+  LM -->|"SMTP"| SES --> CLIENT
 
-  CLIENT -->|"visite preview"| CADDY --> WP
+  CLIENT -->|"visite preview"| CFP
   CLIENT -->|"paie 500"| STRIPE
-  STRIPE -->|"webhook<br/>checkout.session.completed"| N8N
-  N8N -->|"achat domaine + A record"| DNS
-  N8N -->|"map domaine → subsite"| WP
-  N8N -->|"INSERT client_domains"| PG
-
-  CLIENT -->|"domaine → IP VPS"| CADDY
-  CADDY -->|"ask: domaine autorisé ?"| N8N
-  N8N -->|"SELECT client_domains"| PG
-  N8N -->|"200 OK"| CADDY
-  CADDY -->|"cert Let's Encrypt à la volée"| CLIENT
+  STRIPE -->|"webhook (payment_status=paid)"| N8N
+  N8N -->|"achat domaine"| GANDI
+  N8N -->|"attach-domain"| SG --> CFP
+  N8N -->|"CNAME @ → projet.pages.dev"| GANDI
+  N8N -->|"carte livrée"| KB
 
   PG --- N8N
-  PG --- LM
-  MDB --- WP
+  PG --- TW
+  PG --- KB
+  RD --- TW
 ```
 
-## Séquence On-Demand TLS (garde-fou)
+## Séquence paiement → livraison (Konbini/ACH async gérés)
 
 ```mermaid
 sequenceDiagram
-  participant U as Navigateur client
-  participant C as Caddy
-  participant N as n8n (/tls-authorize)
-  participant P as PostgreSQL
-  U->>C: TLS ClientHello (SNI = cabinet-durand.ch)
-  C->>N: GET /webhook/tls-authorize?domain=cabinet-durand.ch
-  N->>P: SELECT 1 FROM client_domains WHERE domain=$1 AND active
-  alt domaine payé & actif
-    P-->>N: 1 ligne
-    N-->>C: 200 OK
-    C->>C: émet le certificat Let's Encrypt (cache /data)
-    C-->>U: TLS établi + contenu WordPress
-  else inconnu
-    P-->>N: 0 ligne
-    N-->>C: 404
-    C-->>U: handshake refusé (pas de cert émis)
-  end
+  participant C as Client
+  participant S as Stripe
+  participant N as n8n (/webhook/stripe)
+  participant G as Gandi
+  participant P as Cloudflare Pages
+  C->>S: paiement (carte / TWINT / PayNow / Konbini / ACH)
+  S->>N: checkout.session.completed
+  Note over N: Konbini/ACH → payment_status "unpaid" ici : on n'agit PAS
+  S->>N: checkout.session.async_payment_succeeded (Konbini/ACH)
+  N->>N: IF payment_status == "paid"
+  N->>G: achat domaine (/v5/domain/domains)
+  N->>P: attach-domain (projet Pages)
+  N->>G: LiveDNS CNAME @ → projet.pages.dev
+  P-->>C: site en ligne (TLS auto)
 ```
