@@ -1,7 +1,7 @@
 # Profils de prompt LLM par marché
 
 Chaque `prompt_key` de `country_matrix.yaml` renvoie à un system prompt ci-dessous.
-Le node LLM (Ollama) reçoit `{{system}}` + un `{{user}}` contenant les données du
+Le node LLM (NVIDIA Nemotron) reçoit `{{system}}` + un `{{user}}` contenant les données du
 lead (raison sociale, secteur, ville, note Google, spécialités) et renvoie un JSON
 strict :
 
@@ -10,13 +10,12 @@ strict :
   "hero_subtitle": "", "sections": [{"heading":"","body":""}], "cta": "" }
 ```
 
-> ⚠️ **Qualité keigo & langues fines.** Les modèles Ollama légers (llama3.1:8b,
-> qwen2.5:7b) produisent un keigo japonais et un allemand commercial imparfaits.
-> Pour JP et LI, utilisez au minimum `qwen2.5:14b`/`32b` (bon en japonais) et
-> **prévoyez une relecture humaine avant envoi**. La logique de routage reste
-> identique quel que soit le modèle.
-
-Modèle recommandé par défaut : `qwen2.5:14b-instruct` (multilingue solide).
+> **Modèle : `nvidia/nemotron-3-ultra-550b-a55b`** (endpoint NVIDIA, clé lue depuis
+> OCI Vault). MoE 550B / 55B actifs — excellent multilingue, keigo japonais et
+> allemand commercial de bonne tenue. Pour JP/LI on peut activer le raisonnement
+> (`chat_template_kwargs.enable_thinking=true`, au prix de latence/coût) ; une
+> relecture humaine reste conseillée sur les marchés premium. Le node lit la
+> réponse dans `choices[0].message.content` (format OpenAI).
 
 ---
 

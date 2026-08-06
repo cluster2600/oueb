@@ -10,7 +10,7 @@
           "rawBody": true
         }
       },
-      "id": "b8e11ff9-d39e-4c6e-bda1-9ff9086a4d61",
+      "id": "24536d30-4ca3-4969-a5d1-5d50a7c8c6b9",
       "name": "Webhook Stripe",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -23,7 +23,7 @@
       "parameters": {
         "jsCode": "// Vérifie la signature Stripe (HMAC SHA-256 sur le corps brut).\nconst crypto = require('crypto');\nconst secret = $env.STRIPE_WEBHOOK_SECRET;\nconst sigHeader = $json.headers['stripe-signature'] || '';\nconst raw = $json.body;                    // Webhook en mode \"raw body\"\nconst parts = Object.fromEntries(sigHeader.split(',').map(p => p.split('=')));\nconst signed = parts.t + '.' + (typeof raw === 'string' ? raw : JSON.stringify(raw));\nconst expected = crypto.createHmac('sha256', secret).update(signed).digest('hex');\nif (expected !== parts.v1) { throw new Error('Signature Stripe invalide'); }\nconst event = typeof raw === 'string' ? JSON.parse(raw) : raw;\nreturn [{ json: event }];\n"
       },
-      "id": "153aaa28-b370-4b67-9adf-014b4a0a07d5",
+      "id": "7534416e-9166-4100-95bd-131975c5e81e",
       "name": "Vérifier signature",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -52,7 +52,7 @@
           ]
         }
       },
-      "id": "a0a0105a-2106-49a6-98f9-139e5a731bdf",
+      "id": "038d9794-ffb7-49f4-9ee3-7bc3afe82a33",
       "name": "IF paiement confirmé",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -79,7 +79,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"fqdn\": $json.data.object.metadata.domain_target, \"duration\": 1, \"owner\": { \"country\": \"CH\", \"email\": $env.REGISTRANT_EMAIL, \"given\": \"OUEB\", \"family\": \"Operator\", \"streetaddr\": \"n/a\", \"city\": \"n/a\", \"zip\": \"0000\", \"phone\": \"+41.000000000\", \"type\": \"company\", \"orgname\": \"OUEB\" } } }}"
       },
-      "id": "bafdd085-1dce-442e-b40b-5a5c7c987f6e",
+      "id": "3b3402a3-8783-44b3-a66b-ce8d04090e3b",
       "name": "Gandi — achat domaine",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -106,7 +106,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"project\": $('Webhook Stripe').item.json.body.data.object.metadata.project, \"domain\": $('Webhook Stripe').item.json.body.data.object.metadata.domain_target } }}"
       },
-      "id": "fc191473-ac51-4aa7-8df4-16a79d0406ae",
+      "id": "b3b68541-f33f-4bcd-9f83-f8f6601a3fd4",
       "name": "Sitegen — attach domaine (Pages)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -133,7 +133,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"rrset_values\": [ $json.cname_target + \".\" ] } }}"
       },
-      "id": "9891fe50-ec10-4ae6-8787-0a3c2f2075cb",
+      "id": "bdb92a21-0952-4ea1-be72-3b8c0dc6644c",
       "name": "Gandi — DNS CNAME vers Pages",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -160,7 +160,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"createTask\", \"params\": { \"project_id\": 1, \"column_id\": 4, \"title\": \"Livré: \" + $('Webhook Stripe').item.json.body.data.object.metadata.domain_target } } }}"
       },
-      "id": "28fd18e6-35c2-4699-8569-1506e9b6dbfc",
+      "id": "39f62977-9f8b-453f-9892-fa1cce0441da",
       "name": "Kanboard — carte livrée",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -187,7 +187,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { \"subscriber_email\": $('Webhook Stripe').item.json.body.data.object.customer_details.email, \"template_id\": 3, \"data\": { \"domain\": $('Webhook Stripe').item.json.body.data.object.metadata.domain_target } } }}"
       },
-      "id": "507fdba2-0548-4922-a465-72bd58ac512a",
+      "id": "5f03244f-891d-45a2-a754-ca09e4e2e45d",
       "name": "Listmonk — livraison",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -198,7 +198,7 @@
     },
     {
       "parameters": {},
-      "id": "05bed4a2-e355-433b-aa93-28f16e3d0faf",
+      "id": "3126e698-686c-4fa3-b7ef-1eb4227994a3",
       "name": "Ignorer",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,

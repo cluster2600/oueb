@@ -10,14 +10,14 @@ Marchés cibles : 🇨🇭 Suisse · 🇱🇮 Liechtenstein · 🇲🇨 Monaco �
 Prix : 500 CHF / EUR / SGD / USD et **79 800 JPY**. Paiements locaux : TWINT (CH/LI),
 PayNow (SG), Konbini (JP), ACH/Link (US).
 
-OSS : **n8n · Playwright · Ollama · Cloudflare Pages · Listmonk · Twenty · Kanboard
+OSS self-hosted (LLM via **endpoint NVIDIA Nemotron**) : **n8n · Playwright · Cloudflare Pages · Listmonk · Twenty · Kanboard
 · Caddy**. Le VPS n'héberge que le **control-plane** ; les sites clients vivent sur
 l'edge Cloudflare (TLS + CDN mondial gratuits). Schémas : [`docs/architecture.md`](docs/architecture.md).
 
 ```mermaid
 flowchart LR
   GM["Google Maps"] --> SCR["Scraper"] --> N8N["n8n"]
-  N8N --> ZX["Zefix (CH)"] --> N8N --> OLL["Ollama"] --> N8N
+  N8N --> ZX["Zefix (CH)"] --> N8N --> OLL["NVIDIA Nemotron"] --> N8N
   N8N --> STR["Stripe"] --> N8N
   N8N --> SG["sitegen"] --> CFP["Cloudflare Pages"]
   N8N --> TW["Twenty"]
@@ -30,7 +30,7 @@ flowchart LR
 
 ```
 oueb/
-├── docker-compose.yml   # caddy·postgres·redis·n8n·listmonk·twenty(+worker)·kanboard·sitegen·scraper·ollama
+├── docker-compose.yml   # caddy·postgres·redis·n8n·listmonk·twenty(+worker)·kanboard·sitegen·scraper (LLM = NVIDIA externe)
 ├── .env.example
 ├── docker/
 │   ├── caddy/Caddyfile          # reverse proxy back-office (TLS Let's Encrypt)
@@ -59,8 +59,8 @@ docker compose up -d postgres redis
 docker compose run --rm listmonk ./listmonk --install --yes   # schéma Listmonk (1x)
 docker compose up -d
 
-# LLM local
-docker compose exec ollama ollama pull qwen2.5:14b-instruct
+# LLM = endpoint NVIDIA (aucun modèle local). Mets NVIDIA_API_KEY dans .env
+# (en prod : lu depuis OCI Vault au boot via instance principal).
 
 # Comptes back-office (pointez MAIN_DOMAIN vers l'IP du VPS d'abord) :
 #  - Twenty   : https://$MAIN_DOMAIN            -> créer le workspace, puis Settings > API (TWENTY_API_KEY)

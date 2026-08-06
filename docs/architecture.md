@@ -12,7 +12,7 @@ flowchart TD
     CADDY["Caddy<br/>reverse proxy back-office"]
     N8N["n8n<br/>orchestrateur / webhooks"]
     SCR["Scraper<br/>Python + Playwright"]
-    OLL["Ollama<br/>LLM local"]
+    OLL["NVIDIA Nemotron<br/>(API externe, clé via OCI Vault)"]
     SG["sitegen<br/>build statique + wrangler"]
     LM["Listmonk"]
     TW["Twenty CRM"]

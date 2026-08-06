@@ -5,7 +5,7 @@ Deux workflows **importables** (JSON) — dans l'UI (`https://$MAIN_DOMAIN/n8n/`
 
 | Fichier | Workflow |
 |---------|----------|
-| [`1-outreach.json`](1-outreach.json) | Scraping → Zefix (CH) → Country Router → Ollama → Stripe → **sitegen/Pages** → Twenty → Kanboard → Listmonk |
+| [`1-outreach.json`](1-outreach.json) | Scraping → Zefix (CH) → Country Router → NVIDIA Nemotron → Stripe → **sitegen/Pages** → Twenty → Kanboard → Listmonk |
 | [`2-provisioning.json`](2-provisioning.json) | Webhook Stripe → (paid) → Gandi (domaine) → attach Pages → DNS CNAME → Kanboard → Listmonk |
 
 > Plus de workflow `tls-authorize` : les sites vivent sur **Cloudflare Pages**, qui
@@ -28,7 +28,7 @@ conteneur n8n (`.env`), lues via `{{$env.XXX}}`.
 | 4 | **Loop** | itère lead par lead |
 | 5 | **HTTP → Zefix (CH)** | `onError: continue` — valide l'entité CH, renvoie canton + UID |
 | 6 | **Function — Country Router** | injecte devise, locale, `prompt_key`, `stripe_price_id`, `payment_methods`, TLD ; **canton Zefix → langue** (`GE/VD/VS/NE/JU/FR → ch_fr`, `TI → ch_it`) |
-| 7 | **HTTP → Ollama** | contenu + SEO localisés (keigo JP, allemand LI, `us_en`…), `format:"json"` |
+| 7 | **HTTP → NVIDIA Nemotron** | `nvidia/nemotron-3-ultra-550b-a55b` (OpenAI-compatible), contenu + SEO localisés (keigo JP, allemand LI, `us_en`…) ; clé Vault |
 | 8 | **HTTP → Stripe** | Payment Link, devise + méthode locale (metadata: `slug`, `project`, `domain_target`, `country`) |
 | 9 | **HTTP → sitegen** | `POST sitegen:8080/deploy` (slug, lang, seo, `pay_url`) → **Cloudflare Pages** preview, renvoie l'URL |
 | 10 | **HTTP → Twenty** | crée l'opportunity (`stage: NEW`) |
