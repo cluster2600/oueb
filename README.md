@@ -48,6 +48,7 @@ oueb/
     ├── architecture.md          # schémas Mermaid
     ├── hosting-registrar.md      # Cloudflare Pages + matrice registrars
     ├── browser-backends.md       # Chromium local vs Kitesurf (Cloudflare Browser Run)
+    ├── deploy-cloudflare.md      # token, déploiement Pages, livraison post-paiement
     └── compliance.md            # SES, opt-in JP, RGPD/PDPA/nLPD/CAN-SPAM, scraping
 ```
 
