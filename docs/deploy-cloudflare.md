@@ -1,7 +1,7 @@
 # Déployer un one-page sur Cloudflare Pages
 
-Procédure vérifiée : toute la chaîne locale (génération HTML → dossier temporaire
-→ `wrangler pages deploy`) fonctionne. **Seul l'accès Cloudflare manque.**
+Procédure **vérifiée de bout en bout** : deux sites ont été déployés et contrôlés
+en ligne (démo filigranée en `noindex`, site livré en `index,follow`).
 
 ## 1. Créer le token
 
@@ -89,7 +89,20 @@ curl -s https://<projet>.pages.dev | grep -o 'content="[a-z,]*follow"'
 - `wrangler login` (OAuth navigateur) suffit pour un test manuel, mais les
   conteneurs `sitegen`/n8n ont besoin du **token dans `.env`** : ils tournent en
   environnement non interactif.
-- Le projet Pages est créé automatiquement par `wrangler` au premier déploiement.
+- **Le projet Pages n'est PAS créé automatiquement** en non-interactif :
+  `wrangler pages deploy` échoue avec « Project not found ». `sitegen` le crée
+  donc au préalable via l'API (`ensureProject`, idempotent).
+- **Utilise toujours `url` (alias stable `<projet>.pages.dev`)** dans les cold
+  emails, jamais `deployment_url`. Cette dernière est figée sur un déploiement :
+  le prospect y verrait encore la démo filigranée après avoir payé. Son
+  sous-domaine à deux niveaux n'est d'ailleurs pas couvert par le certificat
+  `*.pages.dev` et échoue en TLS.
+- Un token Cloudflare *account-scoped* (préfixe `cfat_`) renvoie `401` sur
+  `/user/tokens/verify` tout en étant parfaitement valide : ce endpoint est
+  user-level. Vérifie-le plutôt sur `/accounts/<id>/pages/projects`.
+- `sitegen` invoque l'entrypoint JS de wrangler avec le node courant (pas `npx`) :
+  Node ≥ 20 refuse de spawner un `.cmd` sans `shell: true` sous Windows, et un
+  shell exposerait le nom de projet à une injection.
 - `sitegen/package.json` épingle `wrangler ^3.80` ; la v4 est disponible et
   wrangler affiche un avertissement d'obsolescence. Montée de version à tester
   séparément (changements de rupture possibles sur `pages deploy`).
