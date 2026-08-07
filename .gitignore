@@ -4,6 +4,7 @@ __pycache__/
 seo.json
 scraper/.venv/
 scripts/.venv/
+node_modules/
 # volumes / dumps éventuels montés localement
 data/
 *.sql.gz

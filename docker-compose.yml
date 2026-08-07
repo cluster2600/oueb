@@ -183,6 +183,11 @@ services:
     <<: *common
     environment:
       SCRAPER_TOKEN: ${SCRAPER_TOKEN}
+      # local (Chromium dans le conteneur) | kitesurf (Cloudflare Browser Run).
+      BROWSER_BACKEND: ${BROWSER_BACKEND:-local}
+      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
+    # shm_size n'est utile qu'au Chromium local ; inoffensif en mode kitesurf.
     shm_size: "1gb"
     networks: [internal]
 

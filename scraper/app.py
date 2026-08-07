@@ -9,6 +9,10 @@ Service HTTP interne appelé par n8n :
 On ne retient QUE les fiches sans site web (le prospect idéal). Le champ website
 est absent du panneau latéral quand l'établissement n'en a pas déclaré.
 
+Le navigateur est commutable via BROWSER_BACKEND :
+    local    (défaut) Chromium dans le conteneur — comportement historique.
+    kitesurf          Cloudflare Browser Run (navigateur agent-first, CDP distant).
+
 ⚠️ Le scraping de Google Maps viole les CGU de Google et peut casser à chaque
 changement d'UI. Pour de la production durable, préférez l'API officielle Google
 Places (Text Search + Place Details, champ `website`) — voir docs/compliance.md.
@@ -27,7 +31,51 @@ from pydantic import BaseModel, Field
 from playwright.async_api import async_playwright
 
 SCRAPER_TOKEN = os.environ.get("SCRAPER_TOKEN", "")
+
+# Backend navigateur : "local" (Chromium embarqué, défaut) ou "kitesurf"
+# (Cloudflare Browser Run — navigateur agent-first, CDP distant, pas de Chromium
+# dans l'image). Voir docs/architecture.md et docs/browser-backends.md.
+BROWSER_BACKEND = os.environ.get("BROWSER_BACKEND", "local").strip().lower()
+CF_ACCOUNT_ID = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "")
+CF_API_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN", "")
+
+KITESURF_CDP_TEMPLATE = (
+    "wss://api.cloudflare.com/client/v4/accounts/{account}"
+    "/browser-run/devtools/browser?browser=kitesurf"
+)
+
 app = FastAPI(title="oueb-scraper")
+
+
+def kitesurf_endpoint(account_id: str) -> str:
+    """URL CDP Kitesurf pour un compte Cloudflare (pure, testable hors-ligne)."""
+    if not account_id:
+        raise RuntimeError(
+            "CLOUDFLARE_ACCOUNT_ID est requis quand BROWSER_BACKEND=kitesurf")
+    return KITESURF_CDP_TEMPLATE.format(account=urllib.parse.quote(account_id))
+
+
+async def _open_browser(p):
+    """Ouvre un navigateur selon BROWSER_BACKEND.
+
+    - local    : Chromium lancé dans le conteneur (nécessite l'image Playwright).
+    - kitesurf : connexion CDP à Cloudflare Browser Run. Kitesurf parle le
+      Chrome DevTools Protocol, donc le reste du code Playwright est inchangé.
+    """
+    if BROWSER_BACKEND == "kitesurf":
+        if not CF_API_TOKEN:
+            raise RuntimeError(
+                "CLOUDFLARE_API_TOKEN est requis quand BROWSER_BACKEND=kitesurf "
+                "(token avec la permission « Browser Rendering - Edit »)")
+        return await p.chromium.connect_over_cdp(
+            kitesurf_endpoint(CF_ACCOUNT_ID),
+            headers={"Authorization": f"Bearer {CF_API_TOKEN}"},
+            timeout=60000,
+        )
+    if BROWSER_BACKEND != "local":
+        raise RuntimeError(
+            f"BROWSER_BACKEND inconnu : {BROWSER_BACKEND!r} (attendu: local|kitesurf)")
+    return await p.chromium.launch(args=["--no-sandbox"])
 
 
 class ScrapeRequest(BaseModel):
@@ -49,7 +97,11 @@ class Lead(BaseModel):
 
 @app.get("/healthz")
 async def healthz() -> dict:
-    return {"ok": True}
+    # `configured` signale un backend kitesurf sans credentials (mauvaise conf
+    # visible au déploiement plutôt qu'au premier /scrape).
+    configured = (bool(CF_ACCOUNT_ID and CF_API_TOKEN)
+                  if BROWSER_BACKEND == "kitesurf" else True)
+    return {"ok": True, "browser_backend": BROWSER_BACKEND, "configured": configured}
 
 
 @app.post("/scrape", response_model=list[Lead])
@@ -66,7 +118,7 @@ async def _collect(req: ScrapeRequest) -> list[Lead]:
     leads: list[Lead] = []
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(args=["--no-sandbox"])
+        browser = await _open_browser(p)
         ctx = await browser.new_context(
             locale="en-US",
             user_agent=("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
@@ -165,8 +217,20 @@ def _clean_label(v: str | None) -> str | None:
     return re.sub(r"^[^:]+:\s*", "", v).strip() or None
 
 
-if __name__ == "__main__":  # petit check hors-ligne de la logique de parsing labels
+if __name__ == "__main__":  # checks hors-ligne : parsing des labels + endpoint CDP
     assert _clean_label("Adresse: Rue X 3, 1200 Genève") == "Rue X 3, 1200 Genève"
     assert _clean_label("Téléphone: +41 22 000 00 00") == "+41 22 000 00 00"
     assert _clean_label(None) is None
+
+    ep = kitesurf_endpoint("abc123")
+    assert ep == ("wss://api.cloudflare.com/client/v4/accounts/abc123"
+                  "/browser-run/devtools/browser?browser=kitesurf"), ep
+    # un account_id absent doit échouer au démarrage, pas silencieusement
+    try:
+        kitesurf_endpoint("")
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("kitesurf_endpoint('') aurait dû lever RuntimeError")
+
     print("selfcheck: OK")

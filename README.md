@@ -47,6 +47,7 @@ oueb/
 └── docs/
     ├── architecture.md          # schémas Mermaid
     ├── hosting-registrar.md      # Cloudflare Pages + matrice registrars
+    ├── browser-backends.md       # Chromium local vs Kitesurf (Cloudflare Browser Run)
     └── compliance.md            # SES, opt-in JP, RGPD/PDPA/nLPD/CAN-SPAM, scraping
 ```
 
@@ -86,10 +87,50 @@ paiement, le workflow 2 achète le domaine (**Gandi**, couvre .ch/.li/.jp/.com),
 
 ## Contrôles
 
+Les deux selfchecks tournent hors-ligne (aucun réseau, aucun conteneur), mais
+demandent les dépendances installées une fois :
+
 ```bash
-python3 scraper/app.py            # selfcheck parsing (hors-ligne)
-node sitegen/build.js             # selfcheck génération HTML (hors-ligne)
+# scraper (venv gitignoré)
+python3 -m venv scraper/.venv
+scraper/.venv/bin/pip install -r scraper/requirements.txt   # Windows : scraper\.venv\Scripts\pip
+scraper/.venv/bin/python scraper/app.py     # -> selfcheck: OK  (parsing + endpoint CDP)
+
+# sitegen
+npm --prefix sitegen install
+node sitegen/build.js                       # -> selfcheck: OK  (échappement + filigrane)
+
+docker compose config --quiet               # valide le compose + le .env
 ```
+
+## Filigrane des démos
+
+Les one-pages envoyés en prospection sont **filigranés par défaut** : bandeau
+« APERÇU · NON PAYÉ » avec lien de paiement, motif diagonal répété, et
+`robots: noindex,nofollow` pour qu'une démo ne soit jamais indexée (elle
+concurrencerait le futur vrai site du client).
+
+```bash
+POST /deploy {slug, lang, seo, pay_url}                    # filigrané (défaut)
+POST /deploy {slug, lang, seo, watermark: false}           # livraison post-paiement
+```
+
+Seul un `watermark: false` **explicite** retire le filigrane : le workflow 2
+redéploie le même slug après encaissement Stripe, ce qui produit un site propre
+et indexable. Le CSS du filigrane est injecté à la génération, donc un site payé
+n'en garde aucune trace dans son source.
+
+⚠️ Le filigrane est du HTML/CSS côté client : il décourage la réutilisation,
+il ne l'empêche pas techniquement. C'est un marqueur commercial, pas un DRM.
+
+## Backend navigateur (scraper)
+
+`BROWSER_BACKEND=local` (Chromium dans le conteneur, défaut) ou `kitesurf`
+(Cloudflare Browser Run — 3–4× moins de CPU, 5–7× moins de RAM). Kitesurf parle
+le CDP, donc le code Playwright est inchangé. **Attention** : il ne passe pas les
+challenges anti-bot TLS, donc probablement pas utilisable sur Google Maps —
+détails, quotas et cas d'usage adaptés dans
+[`docs/browser-backends.md`](docs/browser-backends.md).
 
 ## ⚠️ Avant la production — [`docs/compliance.md`](docs/compliance.md)
 
