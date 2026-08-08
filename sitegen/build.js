@@ -95,11 +95,57 @@ function servicesBlock(seo) {
   </div></section>`;
 }
 
+/** Crédit d'image. Obligatoire pour les licences à attribution (CC BY / BY-SA) :
+ *  sans lui, la réutilisation n'est pas conforme. */
+const creditLine = (c) => {
+  if (!c) return "";
+  const txt = c.url
+    ? `<a href="${esc(c.url)}" rel="nofollow noopener">${esc(c.text)}</a>`
+    : esc(c.text);
+  return `<p class="credit">${txt}</p>`;
+};
+
+/** Marque de lubrifiant (ou tout partenaire) : un packshot et une ligne de
+ *  contexte. Rendu seulement si les données le fournissent. */
+function partnerBlock(seo) {
+  const p = seo.partner;
+  if (!p || !p.image) return "";
+  return `<section class="sec"><div class="wrap"><div class="partner">
+    <figure><img src="${esc(p.image)}" alt="${esc(p.alt || "")}" loading="lazy"></figure>
+    <div>
+      ${p.tag ? `<div class="cap">${esc(p.tag)}</div>` : ""}
+      ${p.title ? `<h3>${esc(p.title)}</h3>` : ""}
+      ${p.body ? `<p>${esc(p.body)}</p>` : ""}
+      ${creditLine(p.credit)}
+    </div>
+  </div></div></section>`;
+}
+
 function galleryBlock(seo) {
   const rest = (seo.photos || []).slice(1);
   if (!rest.length) return "";
   const figs = rest.map((p) => `<figure><img src="${esc(p.url)}" alt="${esc(p.alt || "")}" loading="lazy" width="900" height="600"></figure>`).join("\n");
   return `<section class="sec"><div class="wrap"><div class="gallery">${figs}</div></div></section>`;
+}
+
+const panel = (caption, cls, title, src) =>
+  `<div class="panel"><div class="cap">${esc(caption)}</div>
+     <div class="frame ${cls}"><iframe title="${esc(title)}" loading="lazy"
+       referrerpolicy="no-referrer-when-downgrade" src="${esc(src)}"></iframe></div>
+   </div>`;
+
+/** Panorama Street View du lieu réel. L'embed `output=svembed` ne demande pas
+ *  de clé API, contrairement à Street View Static. `heading` oriente la caméra
+ *  vers la façade — sans lui Google choisit un cap arbitraire. */
+function streetview(seo) {
+  const sv = seo.streetview;
+  if (!sv || sv.lat == null || sv.lng == null) return "";
+  const n = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
+  const cbp = `11,${n(sv.heading, 0)},0,0,${n(sv.fov, 80)}`;
+  const src = "https://www.google.com/maps?q=&layer=c" +
+    `&cbll=${n(sv.lat, 0)},${n(sv.lng, 0)}&cbp=${cbp}&output=svembed`;
+  return panel(sv.caption || "La devanture", "sv",
+    sv.title || "Vue de la rue", src);
 }
 
 function contactBlock(seo, payUrl) {
@@ -119,11 +165,15 @@ function contactBlock(seo, payUrl) {
     hours && `<div class="fact"><div class="k">Horaires</div><div class="v hourlist">${hours}</div></div>`,
   ].filter(Boolean).join("\n");
 
-  if (!facts && !q) return "";
+  if (!facts && !q && !seo.streetview) return "";
 
   const map = q
-    ? `<div class="map"><iframe title="${esc(seo.map_title || "Plan d’accès")}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=${encodeURIComponent(q)}&output=embed"></iframe></div>`
+    ? panel(seo.map_caption || "Plan d’accès", "plan",
+        seo.map_title || "Plan d’accès",
+        `https://www.google.com/maps?q=${encodeURIComponent(q)}&output=embed`)
     : "";
+
+  const media = [streetview(seo), map].filter(Boolean).join("\n");
 
   const cta = payUrl
     ? `<a class="cta" href="${esc(payUrl)}">${esc(seo.cta || "Commander ce site")}</a>`
@@ -136,7 +186,7 @@ function contactBlock(seo, payUrl) {
     </div>
     <div class="cols">
       <div><div class="facts">${facts}</div>${cta}</div>
-      ${map}
+      ${media ? `<div class="media">${media}</div>` : ""}
     </div>
   </div></section>`;
 }
@@ -185,6 +235,7 @@ export function buildHtml(seo = {}, lang = "en", payUrl = "", opts = {}) {
       ? `<a class="navtel" href="tel:${esc(tel)}">${esc(seo.phone || tel)}</a>` : "",
     __HERO__: heroBlock(seo),
     __SERVICES__: servicesBlock(seo),
+    __PARTNER__: partnerBlock(seo),
     __GALLERY__: galleryBlock(seo),
     __CONTACT__: contactBlock(seo, payUrl),
     __FOOTER__: `<span>${esc(brand)}</span><span>${esc(
@@ -210,6 +261,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     phone: "021 635 22 73", dial_code: "+41",
     address: "Rue du Centre 9", postal_code: "1023", city: "Crissier",
     hours: [{ d: "Lundi – vendredi", h: "08:00 – 18:00" }],
+    streetview: { lat: 46.5528545, lng: 6.5780216, heading: 120 },
+    partner: {
+      image: "https://example.com/barrel.jpg", alt: "Fût", title: "Huiles",
+      credit: { text: "Auteur, CC BY-SA 4.0", url: "https://example.com/lic" },
+    },
     services: [{ title: "Service", body: "Entretien", icon: "cog" },
                { title: "Expertise", body: "Préparation", icon: "check" }],
     photos: [{ url: "https://example.com/1.jpg", alt: "Atelier" },
@@ -223,10 +279,15 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (demo.includes("<Test>")) fail("HTML brut injecté");
   if (!demo.includes('href="tel:+41216352273"')) fail("lien tel: incorrect");
   if (!demo.includes("google.com/maps?q=")) fail("carte absente");
+  if (!demo.includes("output=svembed")) fail("Street View absent");
+  if (!demo.includes("cbll=46.5528545,6.5780216")) fail("coordonnées Street View perdues");
+  if (!demo.includes("cbp=11,120,0,0,80")) fail("cap Street View non appliqué");
   if (!demo.includes("Rue%20du%20Centre%209")) fail("adresse non encodée dans la carte");
   if ((demo.match(/<li class="item">/g) || []).length !== 2) fail("prestations manquantes");
   if (!demo.includes("https://example.com/2.jpg")) fail("galerie absente");
   if (!demo.includes('property="og:image"')) fail("og:image absent");
+  if (!demo.includes('class="partner"')) fail("bloc partenaire absent");
+  if (!demo.includes("CC BY-SA 4.0")) fail("crédit d'image absent (licence à attribution)");
   if (!demo.includes('content="noindex,nofollow"')) fail("démo indexable");
   if (!demo.includes('class="wm-bar"')) fail("filigrane absent");
   if (demo.includes("__")) fail("placeholder non remplacé");
@@ -244,6 +305,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if ((legacy.match(/<li class="item">/g) || []).length !== 2) fail("legacy h2/sections perdus");
   if (legacy.includes("class=\"gallery\"")) fail("galerie vide rendue");
   if (legacy.includes("google.com/maps")) fail("carte rendue sans adresse");
+  if (legacy.includes("svembed")) fail("Street View rendu sans coordonnées");
+  if (legacy.includes('class="partner"')) fail("bloc partenaire rendu sans données");
 
   // 4. Les motifs `$` du contenu ne doivent pas être réinterprétés.
   const dollar = buildHtml({ h1: "Bar $& Grill", title: "Bar $& Grill" }, "en", "");

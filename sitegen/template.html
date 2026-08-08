@@ -95,6 +95,20 @@
     .item h3{font-size:18px;font-weight:800;letter-spacing:-.01em;margin-bottom:8px}
     .item p{font-size:15.5px;color:var(--oil);line-height:1.6}
 
+    /* Bloc lubrifiants : packshot sur fond blanc fondu dans le béton clair. */
+    .partner{display:grid;grid-template-columns:190px 1fr;gap:clamp(20px,3vw,40px);
+             align-items:center;border-top:1px solid var(--line);padding-top:32px}
+    .partner img{mix-blend-mode:multiply;width:100%;height:auto}
+    .partner h3{font-size:clamp(19px,2.3vw,26px);font-weight:800;
+                letter-spacing:-.02em;margin:6px 0 10px}
+    .partner p{color:var(--oil);font-size:16px;max-width:56ch}
+    .partner .cap{font-family:var(--mono);font-size:12px;letter-spacing:.16em;
+                  text-transform:uppercase;color:var(--oil)}
+    .credit{font-family:var(--mono);font-size:11px;color:var(--oil);
+            margin-top:12px;opacity:.75}
+    .credit a{color:inherit}
+    @media (max-width:560px){.partner{grid-template-columns:120px 1fr}}
+
     .gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
              gap:12px}
     .gallery figure{aspect-ratio:3/2;overflow:hidden;border-radius:3px;
@@ -117,8 +131,12 @@
     .hourlist span{display:flex;justify-content:space-between;gap:18px;
                    max-width:290px;border-bottom:1px dotted rgba(242,243,241,.2);
                    padding-bottom:3px}
-    .map{aspect-ratio:4/3;border-radius:3px;overflow:hidden;background:var(--steel)}
-    .map iframe{width:100%;height:100%;border:0;filter:grayscale(.25)}
+    .media{display:grid;gap:18px}
+    .panel .cap{font-family:var(--mono);font-size:12px;letter-spacing:.16em;
+                text-transform:uppercase;color:var(--amber);margin-bottom:8px}
+    .frame{aspect-ratio:4/3;border-radius:3px;overflow:hidden;background:var(--steel)}
+    .frame iframe{width:100%;height:100%;border:0;display:block}
+    .frame.plan iframe{filter:grayscale(.25)}
 
     .cta{display:inline-block;margin-top:28px;padding:15px 30px;
          background:var(--amber);color:var(--ink);font-weight:800;
@@ -154,6 +172,7 @@
     <div class="wrap">__HERO__</div>
     <div class="hazard"></div>
     __SERVICES__
+    __PARTNER__
     __GALLERY__
     __CONTACT__
   </main>
