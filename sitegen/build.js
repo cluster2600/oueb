@@ -61,6 +61,38 @@ const ICONS = {
 const icon = (k) =>
   `<svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round" stroke-linejoin="round">${ICONS[k] || ICONS.cog}</svg>`;
 
+/* ------------------------------------------------------------- marque -----
+ * Pictogrammes de marque redessinés en vectoriel. Ils sont codés ici et non
+ * acceptés depuis les données : injecter du SVG fourni de l'extérieur
+ * ouvrirait une faille (script, gestionnaires d'événements). */
+const MARKS = {
+  // Berlinette de profil, nez à droite, au trait — reprise de l'enseigne du
+  // Garage du Centre. Les trois barres à gauche sont les lignes de vitesse.
+  wedge: {
+    viewBox: "0 0 300 78",
+    bars: [[6, 33, 46], [2, 40, 50], [14, 47, 38]],
+    body: "M63 57 L58 47 L96 43 C112 32 128 28 150 27 L182 27 " +
+          "L214 40 L272 42 C284 43 292 46 296 50 L290 56 L272 56 " +
+          "C268 40 238 40 234 56 L110 57 C106 42 78 42 74 57 Z",
+    glass: "M102 42 C116 33 133 31 152 30 L180 30 L206 41 Z",
+    details: "M118 48 L268 49 M176 42 L178 52 M278 45 L288 47",
+    wheels: [[253, 56, 15, 7], [92, 57, 15, 7]],
+  },
+};
+
+export function markSvg(key, cls = "mark") {
+  const m = MARKS[key];
+  if (!m) return "";
+  const bars = m.bars.map(([x, y, w]) =>
+    `<rect x="${x}" y="${y}" width="${w}" height="3" class="bar"/>`).join("");
+  const wheels = m.wheels.map(([cx, cy, r, ri]) =>
+    `<circle cx="${cx}" cy="${cy}" r="${r}"/><circle cx="${cx}" cy="${cy}" r="${ri}"/>`).join("");
+  return `<svg class="${esc(cls)}" viewBox="${m.viewBox}" aria-hidden="true" focusable="false">` +
+    bars +
+    `<g class="line"><path d="${m.body}"/><path d="${m.glass}"/>` +
+    `<path d="${m.details}"/>${wheels}</g></svg>`;
+}
+
 /* ------------------------------------------------------------- utilitaires */
 /** Lien tel: — `phone_href` explicite sinon on ne garde que les chiffres et
  *  le +. Le préfixe pays vient des données (produit multi-pays), jamais codé. */
@@ -279,7 +311,8 @@ export function buildHtml(seo = {}, lang = "en", payUrl = "", opts = {}) {
     __OG_IMAGE__: photo
       ? `<meta property="og:image" content="${esc(absoluteUrl(photo.url, seo.site_url))}">`
       : "",
-    __BRAND__: esc(brand),
+    __BRAND__: markSvg(seo.logo_mark) +
+      `<span class="wordmark">${esc(brand)}</span>`,
     __NAVTEL__: tel
       ? `<a class="navtel" href="tel:${esc(tel)}">${esc(seo.phone || tel)}</a>` : "",
     __HERO__: heroBlock(seo),
@@ -333,6 +366,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       credit: { text: "Auteur, CC BY-SA 4.0", url: "https://example.com/lic" },
     },
     theme: { brand: "#0E4C92", accent: "#FFC72C" },
+    logo_mark: "wedge",
     services: [{ title: "Service", body: "Entretien", icon: "cog" },
                { title: "Expertise", body: "Préparation", icon: "check" }],
     photos: [{ url: "https://example.com/1.jpg", alt: "Atelier" },
@@ -358,6 +392,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (!rel.includes('content="https://x.pages.dev/facade.jpg"')) fail("og:image non absolue");
   if (!rel.includes('src="./facade.jpg"')) fail("src de la photo altérée");
   if (!demo.includes('class="partner"')) fail("bloc partenaire absent");
+  if (!demo.includes('class="mark"') || !demo.includes("<circle")) fail("pictogramme absent");
+  if (!demo.includes('<span class="wordmark">')) fail("nom de marque absent");
+  if (buildHtml({ ...seo, logo_mark: undefined }, "fr", "").includes('class="mark"'))
+    fail("pictogramme rendu sans logo_mark");
+  if (buildHtml({ ...seo, logo_mark: "inconnu" }, "fr", "").includes('class="mark"'))
+    fail("pictogramme inconnu rendu");
   if (!demo.includes("--brand:#0E4C92")) fail("thème non appliqué");
   if (!demo.includes("--brand-deep:#09315")) fail("teinte foncée non dérivée");
   if (!demo.includes("CC BY-SA 4.0")) fail("crédit d'image absent (licence à attribution)");
