@@ -16,7 +16,10 @@
         href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=IBM+Plex+Mono:wght@500&display=swap">
   <style>
     :root{
-      /* Identité reprise de l'enseigne du commerce (surchargée par __THEME__).
+      /* Identité reprise de l'enseigne du commerce, surchargée par le bloc de
+         thème injecté après cette feuille. Ne jamais écrire ici le marqueur de
+         ce bloc ni une balise de fermeture de style, même en commentaire :
+         l'analyseur HTML ignore les commentaires CSS et couperait la feuille.
          --brand porte le texte sur fond clair ; --accent n'est lisible que sur
          --brand ou en aplat, jamais en petit texte sur --paper. */
       --brand:#0E4C92; --brand-deep:#093767; --accent:#FFC72C;

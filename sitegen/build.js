@@ -291,6 +291,22 @@ export function buildHtml(seo = {}, lang = "en", payUrl = "", opts = {}) {
 }
 
 /* -------------------------------------------------------------- selfcheck */
+/** Détecte une feuille de style coupée. Si un bloc injecté atterrit à
+ *  l'intérieur d'un <style> existant, son </style> ferme la feuille et tout le
+ *  CSS restant s'affiche en texte sur la page. Déjà arrivé en production : un
+ *  marqueur de remplacement traînait dans un commentaire CSS. */
+export function checkStyleNesting(html) {
+  let depth = 0, max = 0;
+  for (const t of html.matchAll(/<\/?style\b[^>]*>/gi)) {
+    if (t[0].startsWith("</")) depth--;
+    else { depth++; max = Math.max(max, depth); }
+    if (depth < 0) return "</style> orphelin";
+  }
+  if (depth !== 0) return "<style> non fermé";
+  if (max > 1) return "<style> imbriqué — la feuille sera coupée";
+  return null;
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const fail = (m) => { console.error("selfcheck FAIL:", m); process.exit(1); };
   const seo = {
@@ -360,6 +376,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   // 5. Les motifs `$` du contenu ne doivent pas être réinterprétés.
   const dollar = buildHtml({ h1: "Bar $& Grill", title: "Bar $& Grill" }, "en", "");
   if (!dollar.includes("Bar $&amp; Grill")) fail("motif $& corrompu");
+
+  // 6. Aucune variante ne doit produire une feuille de style coupée.
+  for (const [nom, html] of [["démo", demo], ["payé", paid], ["legacy", legacy],
+                             ["thème invalide", evil], ["dollar", dollar]]) {
+    const err = checkStyleNesting(html);
+    if (err) fail(`${nom} : ${err}`);
+  }
 
   console.log("selfcheck: OK");
 }
