@@ -43,10 +43,20 @@ oueb/
 │   ├── country_matrix.yaml      # devise/locale/prompt/prix/paiement par pays
 │   ├── prompts.md               # profils LLM (keigo JP, de LI, ch_fr/it, us_en…)
 │   └── registries.md            # Zefix (CH) + registres JP/SG/LI/MC/US
+├── clients/                     # une fiche JSON par prospect (photos hors dépôt)
+│   ├── _modele.json             # gabarit à copier
+│   └── garage-du-centre.json    # exemple de référence, déployé
+├── tools/                       # outillage de production des démos
+│   ├── prospect-geo.mjs         # adresse -> coordonnées + cap Street View
+│   ├── sign-colors.ps1          # relevé des couleurs d'une enseigne
+│   ├── crop-photo.ps1           # recadrage web aux rapports du gabarit
+│   ├── deploy-client.mjs        # déploie une fiche (+ --paid après paiement)
+│   └── verify-live.mjs          # contrôle structurel de la page publiée
 ├── listmonk/config.toml
 └── docs/
     ├── architecture.md          # schémas Mermaid
     ├── hosting-registrar.md      # Cloudflare Pages + matrice registrars
+    ├── production-client.md      # ⭐ mode opératoire complet, du prospect au site livré
     ├── browser-backends.md       # Chromium local vs Kitesurf (Cloudflare Browser Run)
     ├── deploy-cloudflare.md      # token, déploiement Pages, livraison post-paiement
     └── compliance.md            # SES, opt-in JP, RGPD/PDPA/nLPD/CAN-SPAM, scraping
@@ -102,6 +112,21 @@ npm --prefix sitegen install
 node sitegen/build.js                       # -> selfcheck: OK  (échappement + filigrane)
 
 docker compose config --quiet               # valide le compose + le .env
+```
+
+## Produire la démo d'un prospect
+
+Le mode opératoire complet — qualification, relevé de charte, photos, rédaction,
+déploiement, contrôle, livraison — est dans
+[`docs/production-client.md`](docs/production-client.md). En bref :
+
+```bash
+node tools/prospect-geo.mjs "Rue du Centre 9, 1023 Crissier, Suisse"  # cap Street View
+cp clients/_modele.json clients/mon-prospect.json && $EDITOR clients/mon-prospect.json
+node tools/deploy-client.mjs clients/mon-prospect.json                # démo filigranée
+node tools/verify-live.mjs https://oueb-mon-prospect.pages.dev        # contrôle
+# après encaissement :
+node tools/deploy-client.mjs clients/mon-prospect.json --paid
 ```
 
 ## Filigrane des démos

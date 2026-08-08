@@ -5,6 +5,9 @@ seo.json
 scraper/.venv/
 scripts/.venv/
 node_modules/
+# Photos des prospects : hors dépôt (poids, et droits sur des lieux tiers).
+# Les fiches clients/*.json, elles, sont versionnées.
+clients/*/
 # volumes / dumps éventuels montés localement
 data/
 *.sql.gz

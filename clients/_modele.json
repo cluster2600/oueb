@@ -1,0 +1,70 @@
+{
+  "slug": "nom-du-commerce-ville",
+  "lang": "fr",
+  "pay_url": "https://buy.stripe.com/...",
+  "assets_dir": "nom-du-commerce-ville",
+  "watermark_text": "APERÇU — PROPOSITION DE SITE, NON PAYÉ",
+  "watermark_cta": "Activer ce site — 500 CHF",
+
+  "seo": {
+    "brand": "Nom affiché dans la plaque de marque",
+    "logo_mark": null,
+
+    "theme": {
+      "brand": "#38517C",
+      "accent": "#DCC79B",
+      "paper": "#F4F2EE",
+      "ink": "#171C25"
+    },
+
+    "title": "Nom — activité à Ville",
+    "meta_description": "Une phrase qui dit l'activité, la ville et le téléphone. 160 caractères maximum.",
+    "eyebrow": "Exploitant · Rue X 1, Ville",
+    "h1": "Ce que le commerce fait, en trois mots",
+    "hero_subtitle": "Deux phrases côté client : ce qu'il obtient, et ce qui distingue ce commerce des chaînes voisines.",
+
+    "phone": "021 000 00 00",
+    "phone_href": "+41210000000",
+    "phone_label": "Prendre rendez-vous",
+
+    "address": "Rue X 1",
+    "postal_code": "1000",
+    "city": "Ville",
+    "map_query": "Rue X 1, 1000 Ville, Suisse",
+    "map_caption": "Plan d'accès",
+    "map_title": "Plan d'accès — Rue X 1, Ville",
+
+    "streetview": {
+      "lat": 0,
+      "lng": 0,
+      "heading": 0,
+      "fov": 80,
+      "caption": "La devanture",
+      "title": "Rue X 1, Ville — vue de la rue"
+    },
+
+    "hours": [
+      { "d": "Lundi – vendredi", "h": "08:00 – 18:00" },
+      { "d": "Samedi – dimanche", "h": "Fermé" }
+    ],
+
+    "services_heading": "Prestations",
+    "services_tag": "Une accroche courte",
+    "services": [
+      { "icon": "cog", "title": "Prestation 1", "body": "Ce que ça couvre, en une phrase concrète." },
+      { "icon": "check", "title": "Prestation 2", "body": "Idem." }
+    ],
+
+    "partner": null,
+
+    "contact_heading": "Nous trouver",
+    "contact_tag": "",
+
+    "photos": [
+      { "url": "./facade.jpg", "alt": "Décrire ce qu'on voit, pas « photo du commerce »" },
+      { "url": "./detail.jpg", "alt": "..." }
+    ],
+
+    "cta": "Commander ce site — 500 CHF"
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "slug": "garage-du-centre-crissier",
+  "lang": "fr",
+  "pay_url": "https://buy.stripe.com/test_garage_crissier",
+  "assets_dir": "garage-du-centre",
+  "watermark_text": "APERÇU — PROPOSITION DE SITE, NON PAYÉ",
+  "watermark_cta": "Activer ce site — 500 CHF",
+
+  "seo": {
+    "brand": "Garage du Centre",
+    "logo_mark": "wedge",
+
+    "theme": {
+      "brand": "#38517C",
+      "accent": "#DCC79B",
+      "paper": "#F4F2EE",
+      "ink": "#171C25"
+    },
+
+    "title": "Garage du Centre — Réparation toutes marques à Crissier",
+    "meta_description": "Garage indépendant à Crissier : réparation et entretien toutes marques, préparation à l'expertise, pneus. Buccino Angelo, rue du Centre 9. Tél. 021 635 22 73.",
+    "eyebrow": "Buccino Angelo · Rue du Centre 9, Crissier",
+    "h1": "Réparation toutes marques",
+    "hero_subtitle": "Le garage du bourg depuis des années. Vous parlez directement au mécanicien qui s'occupe de votre voiture, et vous repartez avec un véhicule de remplacement si besoin.",
+
+    "phone": "021 635 22 73",
+    "phone_href": "+41216352273",
+    "phone_label": "Prendre rendez-vous",
+
+    "address": "Rue du Centre 9",
+    "postal_code": "1023",
+    "city": "Crissier",
+    "map_query": "Rue du Centre 9, 1023 Crissier, Suisse",
+    "map_caption": "Plan d'accès",
+    "map_title": "Plan d'accès — Rue du Centre 9, Crissier",
+
+    "streetview": {
+      "lat": 46.5528545,
+      "lng": 6.5780216,
+      "heading": 100,
+      "fov": 80,
+      "caption": "La devanture",
+      "title": "Rue du Centre 9, Crissier — vue de la rue"
+    },
+
+    "hours": [
+      { "d": "Lundi – vendredi", "h": "08:00 – 18:00" },
+      { "d": "Samedi – dimanche", "h": "Fermé" }
+    ],
+
+    "services_heading": "Prestations",
+    "services_tag": "Toutes marques",
+    "services": [
+      { "icon": "cog", "title": "Réparation et entretien",
+        "body": "Vidange, filtres, freins, embrayage, courroie de distribution. Entretien selon les prescriptions du constructeur, sans perte de garantie." },
+      { "icon": "check", "title": "Préparation à l'expertise",
+        "body": "Contrôle complet avant le passage au Service des automobiles, et remise en conformité si nécessaire." },
+      { "icon": "tyre", "title": "Pneus et jantes",
+        "body": "Montage, équilibrage, permutation. Nous gardons votre train de pneus d'une saison à l'autre." },
+      { "icon": "diag", "title": "Diagnostic électronique",
+        "body": "Lecture des défauts toutes marques et recherche de panne, sur voitures récentes comme anciennes." }
+    ],
+
+    "partner": {
+      "tag": "Lubrifiants",
+      "title": "Huiles MOTOREX — Oil of Switzerland",
+      "body": "Vidange et appoints avec des lubrifiants MOTOREX, produits à Langenthal. La spécification est choisie selon votre moteur et les prescriptions du constructeur.",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/MOTOREX_FASS.jpg/960px-MOTOREX_FASS.jpg",
+      "alt": "Fût d'huile moteur MOTOREX",
+      "credit": {
+        "text": "Photo : MOTOREX-OilOfSwitzerland — CC BY-SA 4.0",
+        "url": "https://commons.wikimedia.org/wiki/File:MOTOREX_FASS.jpg"
+      }
+    },
+
+    "contact_heading": "Nous trouver",
+    "contact_tag": "Au cœur du bourg",
+
+    "photos": [
+      { "url": "./facade.jpg", "alt": "L'enseigne du Garage du Centre, rue du Centre 9 à Crissier" },
+      { "url": "./panda.jpg", "alt": "Le véhicule de service aux couleurs du garage" },
+      { "url": "./enseigne.jpg", "alt": "Détail de l'enseigne : Buccino Angelo, réparation toutes marques" }
+    ],
+
+    "cta": "Commander ce site — 500 CHF"
+  }
+}
