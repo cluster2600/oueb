@@ -68,7 +68,8 @@ async function ensureProject(project) {
 app.get("/healthz", (_req, res) => res.json({ ok: true }));
 
 app.post("/deploy", auth, async (req, res) => {
-  const { slug, lang = "en", seo = {}, pay_url = "", watermark = true } = req.body || {};
+  const { slug, lang = "en", seo = {}, pay_url = "", watermark = true,
+          watermark_text, watermark_cta } = req.body || {};
   if (!slug || !seo.h1) return res.status(400).json({ error: "slug + seo.h1 requis" });
 
   // Seul un false explicite retire le filigrane (une valeur absente ou douteuse
@@ -77,7 +78,13 @@ app.post("/deploy", auth, async (req, res) => {
   const project = projectName(slug);
   const dir = mkdtempSync(join(tmpdir(), "site-"));
   try {
-    writeFileSync(join(dir, "index.html"), buildHtml(seo, lang, pay_url, { watermark: wm }));
+    writeFileSync(join(dir, "index.html"), buildHtml(seo, lang, pay_url, {
+      watermark: wm,
+      // Permet d'expliciter, sur une démo non sollicitée, qu'il s'agit d'une
+      // proposition et non du site officiel du commerce.
+      ...(watermark_text ? { watermarkText: watermark_text } : {}),
+      ...(watermark_cta ? { watermarkCta: watermark_cta } : {}),
+    }));
     await ensureProject(project);
     const { stdout } = await run(process.execPath, [
       WRANGLER, "pages", "deploy", dir,
