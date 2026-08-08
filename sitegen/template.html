@@ -16,9 +16,12 @@
         href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=IBM+Plex+Mono:wght@500&display=swap">
   <style>
     :root{
-      /* Palette d'atelier : béton peint, acier, ambre de baladeuse. */
-      --ink:#14181D; --steel:#2B333C; --paper:#F2F3F1; --panel:#E6E9E6;
-      --amber:#F0A81E; --oil:#5F6873; --line:#CFD4CF;
+      /* Identité reprise de l'enseigne du commerce (surchargée par __THEME__).
+         --brand porte le texte sur fond clair ; --accent n'est lisible que sur
+         --brand ou en aplat, jamais en petit texte sur --paper. */
+      --brand:#0E4C92; --brand-deep:#093767; --accent:#FFC72C;
+      --paper:#F2F3F5; --panel:#E4E7EC; --ink:#121820;
+      --oil:#5D6675; --line:#CDD2DA;
       --display:"Archivo",system-ui,sans-serif;
       --mono:"IBM Plex Mono",ui-monospace,monospace;
       --gut:clamp(20px,4vw,48px);
@@ -28,50 +31,48 @@
     ul{padding:0;list-style:none}
     img{max-width:100%;display:block}
     html{-webkit-text-size-adjust:100%}
-    body{
-      font:400 17px/1.65 var(--display);
-      color:var(--ink); background:var(--paper);
-      text-rendering:optimizeLegibility;
-    }
+    body{font:400 17px/1.65 var(--display);color:var(--ink);
+         background:var(--paper);text-rendering:optimizeLegibility}
     .wrap{max-width:1180px;margin:0 auto;padding:0 var(--gut)}
     a{color:inherit}
-    :focus-visible{outline:3px solid var(--amber);outline-offset:3px}
+    :focus-visible{outline:3px solid var(--brand);outline-offset:3px}
 
-    /* Bande de danger : marquage d'atelier réel, seul ornement de la page. */
+    /* Bande reprenant les deux couleurs de l'enseigne. */
     .hazard{height:10px;background:repeating-linear-gradient(
-      135deg,var(--amber) 0 16px,var(--ink) 16px 32px)}
+      135deg,var(--accent) 0 18px,var(--brand) 18px 36px)}
 
     /* ---------------------------------------------------------------- nav */
     .nav{display:flex;align-items:center;justify-content:space-between;
          gap:16px;padding:20px 0;flex-wrap:wrap}
-    .brand{font-weight:800;font-size:19px;letter-spacing:-.02em;
-           text-decoration:none;display:flex;align-items:center;gap:10px}
-    .brand::before{content:"";width:12px;height:12px;background:var(--amber);
-                   border-radius:2px;flex:none}
+    /* La marque est rendue comme la plaque émaillée de la façade. */
+    .brand{display:inline-block;background:var(--brand);color:var(--accent);
+           font-weight:800;font-size:19px;letter-spacing:.01em;padding:10px 18px;
+           border-radius:2px;text-decoration:none;
+           box-shadow:inset 0 0 0 2px rgba(255,255,255,.14)}
     .navtel{font-family:var(--mono);font-size:15px;text-decoration:none;
-            padding:10px 18px;border:2px solid var(--ink);border-radius:2px;
-            font-weight:500;transition:background .15s,color .15s}
-    .navtel:hover{background:var(--ink);color:var(--paper)}
+            padding:10px 18px;border:2px solid var(--brand);border-radius:2px;
+            font-weight:500;color:var(--brand);transition:background .15s,color .15s}
+    .navtel:hover{background:var(--brand);color:var(--accent)}
 
     /* --------------------------------------------------------------- hero */
     .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(24px,4vw,56px);
           align-items:center;padding:clamp(28px,5vw,64px) 0 clamp(36px,6vw,72px)}
     .eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.14em;
-             text-transform:uppercase;color:var(--oil);margin-bottom:18px}
+             text-transform:uppercase;color:var(--brand);margin-bottom:18px}
     .hero h1{font-size:clamp(38px,6.4vw,76px);font-weight:800;line-height:.98;
              letter-spacing:-.035em;text-wrap:balance}
     .hero .sub{font-size:clamp(17px,1.9vw,21px);color:var(--oil);
                margin-top:20px;max-width:46ch}
     /* Le téléphone est la signature typographique : appeler EST le but. */
     .telblock{margin-top:32px;display:inline-flex;flex-direction:column;
-              text-decoration:none;border-left:6px solid var(--amber);
+              text-decoration:none;border-left:6px solid var(--brand);
               padding-left:18px}
     .telblock .lbl{font-family:var(--mono);font-size:12px;letter-spacing:.16em;
                    text-transform:uppercase;color:var(--oil)}
     .telblock .num{font-family:var(--mono);font-weight:500;
                    font-size:clamp(26px,3.6vw,42px);letter-spacing:-.02em;
-                   line-height:1.15;margin-top:4px}
-    .telblock:hover .num{color:var(--amber)}
+                   line-height:1.15;margin-top:4px;color:var(--brand)}
+    .telblock:hover .num{color:var(--brand-deep)}
     .heromedia{position:relative;aspect-ratio:4/3;background:var(--panel);
                border-radius:3px;overflow:hidden}
     .heromedia img{width:100%;height:100%;object-fit:cover}
@@ -85,17 +86,17 @@
     .sechead h2{font-size:clamp(24px,3.2vw,38px);font-weight:800;
                 letter-spacing:-.03em}
     .sechead .tag{font-family:var(--mono);font-size:12px;letter-spacing:.16em;
-                  text-transform:uppercase;color:var(--oil)}
+                  text-transform:uppercase;color:var(--brand)}
 
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
           gap:2px;background:var(--line);border:1px solid var(--line)}
     .item{background:var(--paper);padding:28px 24px}
-    .item svg{width:30px;height:30px;stroke:var(--amber);stroke-width:1.6;
+    .item svg{width:30px;height:30px;stroke:var(--brand);stroke-width:1.6;
               fill:none;margin-bottom:16px}
     .item h3{font-size:18px;font-weight:800;letter-spacing:-.01em;margin-bottom:8px}
     .item p{font-size:15.5px;color:var(--oil);line-height:1.6}
 
-    /* Bloc lubrifiants : packshot sur fond blanc fondu dans le béton clair. */
+    /* Bloc lubrifiants : packshot sur fond blanc fondu dans le fond clair. */
     .partner{display:grid;grid-template-columns:190px 1fr;gap:clamp(20px,3vw,40px);
              align-items:center;border-top:1px solid var(--line);padding-top:32px}
     .partner img{mix-blend-mode:multiply;width:100%;height:auto}
@@ -103,7 +104,7 @@
                 letter-spacing:-.02em;margin:6px 0 10px}
     .partner p{color:var(--oil);font-size:16px;max-width:56ch}
     .partner .cap{font-family:var(--mono);font-size:12px;letter-spacing:.16em;
-                  text-transform:uppercase;color:var(--oil)}
+                  text-transform:uppercase;color:var(--brand)}
     .credit{font-family:var(--mono);font-size:11px;color:var(--oil);
             margin-top:12px;opacity:.75}
     .credit a{color:inherit}
@@ -117,29 +118,32 @@
     .gallery figure:hover img{transform:scale(1.04)}
 
     /* ------------------------------------------------------------ contact */
-    .contact{background:var(--ink);color:var(--paper)}
-    .contact .sechead h2{color:var(--paper)}
+    /* Section en aplat de l'enseigne : le jaune n'est employé qu'ici. */
+    .contact{background:var(--brand);color:#fff}
+    .contact .sechead h2{color:#fff}
+    .contact .sechead .tag{color:var(--accent)}
     .contact .cols{display:grid;grid-template-columns:1fr 1.15fr;
                    gap:clamp(24px,4vw,48px);align-items:start}
     .facts{display:grid;gap:22px}
     .fact .k{font-family:var(--mono);font-size:12px;letter-spacing:.16em;
-             text-transform:uppercase;color:var(--amber);margin-bottom:6px}
+             text-transform:uppercase;color:var(--accent);margin-bottom:6px}
     .fact .v{font-size:17px;line-height:1.6}
-    .fact a{text-decoration:none;border-bottom:1px solid rgba(242,243,241,.35)}
-    .fact a:hover{border-color:var(--amber);color:var(--amber)}
+    .fact a{text-decoration:none;border-bottom:1px solid rgba(255,255,255,.4)}
+    .fact a:hover{border-color:var(--accent);color:var(--accent)}
     .hourlist{font-family:var(--mono);font-size:15px;display:grid;gap:4px}
     .hourlist span{display:flex;justify-content:space-between;gap:18px;
-                   max-width:290px;border-bottom:1px dotted rgba(242,243,241,.2);
+                   max-width:290px;border-bottom:1px dotted rgba(255,255,255,.28);
                    padding-bottom:3px}
     .media{display:grid;gap:18px}
     .panel .cap{font-family:var(--mono);font-size:12px;letter-spacing:.16em;
-                text-transform:uppercase;color:var(--amber);margin-bottom:8px}
-    .frame{aspect-ratio:4/3;border-radius:3px;overflow:hidden;background:var(--steel)}
+                text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+    .frame{aspect-ratio:4/3;border-radius:3px;overflow:hidden;
+           background:var(--brand-deep)}
     .frame iframe{width:100%;height:100%;border:0;display:block}
     .frame.plan iframe{filter:grayscale(.25)}
 
     .cta{display:inline-block;margin-top:28px;padding:15px 30px;
-         background:var(--amber);color:var(--ink);font-weight:800;
+         background:var(--accent);color:var(--ink);font-weight:800;
          text-decoration:none;border-radius:2px;letter-spacing:-.01em}
     .cta:hover{filter:brightness(1.07)}
 
@@ -152,13 +156,13 @@
       .heromedia{order:-1;aspect-ratio:16/10}
       .contact .cols{grid-template-columns:1fr}
     }
-    /* Révélation unique au chargement, désactivée si l'utilisateur la refuse. */
     @media (prefers-reduced-motion:no-preference){
       .rise{animation:rise .6s cubic-bezier(.2,.7,.2,1) both}
       .rise:nth-child(2){animation-delay:.06s}
       @keyframes rise{from{opacity:0;transform:translateY(14px)}}
     }
   </style>
+  __THEME__
 </head>
 <body>
   __WATERMARK__

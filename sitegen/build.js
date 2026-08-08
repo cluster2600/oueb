@@ -13,6 +13,41 @@ const esc = (s) =>
 export const WATERMARK_TEXT = "APERÇU · NON PAYÉ";
 export const WATERMARK_CTA = "Activer ce site";
 
+/* ------------------------------------------------------------------- thème */
+// Couleurs reprises de l'enseigne du commerce. Elles viennent des données, donc
+// elles sont validées en hexadécimal strict : sans ça, une valeur comme
+// `red;}body{display:none` sortirait de la déclaration et injecterait du CSS.
+const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+const expand = (h) => h.length === 4
+  ? "#" + [...h.slice(1)].map((c) => c + c).join("") : h;
+
+/** Assombrit une couleur vers le noir — évite d'exiger une seconde teinte de
+ *  bleu dans les données alors qu'une enseigne n'en porte qu'une. */
+export function darken(hex, ratio = 0.36) {
+  const h = expand(hex);
+  const n = parseInt(h.slice(1), 16);
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+    .map((v) => Math.max(0, Math.round(v * (1 - ratio))));
+  return "#" + ch.map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+export function themeBlock(seo = {}) {
+  const t = seo.theme || {};
+  const decls = [];
+  const put = (name, val) => { if (HEX.test(String(val || ""))) decls.push(`${name}:${val}`); };
+
+  put("--brand", t.brand);
+  put("--accent", t.accent);
+  put("--paper", t.paper);
+  put("--ink", t.ink);
+  // Teinte foncée dérivée si elle n'est pas fournie explicitement.
+  if (HEX.test(String(t.brand_deep || ""))) put("--brand-deep", t.brand_deep);
+  else if (HEX.test(String(t.brand || ""))) put("--brand-deep", darken(t.brand));
+
+  return decls.length ? `<style>:root{${decls.join(";")}}</style>` : "";
+}
+
 /* ------------------------------------------------------------------ icônes */
 // Jeu réduit, trait uniforme : ce sont des repères de lecture, pas du décor.
 const ICONS = {
@@ -196,17 +231,19 @@ function watermarkMarkup(text, payUrl, ctaLabel) {
   const style =
     "<style>" +
     ".wm-tile{position:fixed;inset:0;z-index:9998;pointer-events:none;background-repeat:repeat}" +
+    // Neutre volontairement : le thème du client étant variable, un bandeau
+    // coloré risquerait de passer pour un élément de sa charte.
     ".wm-bar{position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:12px;" +
-    "align-items:center;justify-content:center;padding:10px 16px;background:#F0A81E;" +
-    "color:#14181D;font-size:14px;font-weight:800;text-align:center}" +
-    ".wm-bar a{color:#14181D;text-decoration:underline}" +
+    "align-items:center;justify-content:center;padding:10px 16px;background:#14181D;" +
+    "color:#fff;font-size:14px;font-weight:800;text-align:center}" +
+    ".wm-bar a{color:#fff;text-decoration:underline}" +
     "@media print{.wm-tile{display:none}}" +
     "</style>";
   const svg =
     '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="200">' +
     '<text x="180" y="100" transform="rotate(-30 180 100)" text-anchor="middle" ' +
     'font-family="Archivo,Segoe UI,sans-serif" font-size="22" font-weight="700" ' +
-    'fill="rgba(20,24,29,0.10)">' + esc(text) + "</text></svg>";
+    'fill="rgba(18,24,32,0.11)">' + esc(text) + "</text></svg>";
   const uri = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   const cta = payUrl ? ` <a href="${esc(payUrl)}">${esc(ctaLabel)}</a>` : "";
   return style + `<div class="wm-bar">${esc(text)}${cta}</div>` +
@@ -242,6 +279,7 @@ export function buildHtml(seo = {}, lang = "en", payUrl = "", opts = {}) {
       [seo.address, seo.city].filter(Boolean).join(" · "))}</span>`,
     // Une démo ne doit jamais être indexée : elle concurrencerait le vrai site
     // du client et resterait dans l'index après suppression.
+    __THEME__: themeBlock(seo),
     __ROBOTS__: watermark ? "noindex,nofollow" : "index,follow",
     __WATERMARK__: watermark ? watermarkMarkup(watermarkText, payUrl, watermarkCta) : "",
   };
@@ -266,6 +304,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       image: "https://example.com/barrel.jpg", alt: "Fût", title: "Huiles",
       credit: { text: "Auteur, CC BY-SA 4.0", url: "https://example.com/lic" },
     },
+    theme: { brand: "#0E4C92", accent: "#FFC72C" },
     services: [{ title: "Service", body: "Entretien", icon: "cog" },
                { title: "Expertise", body: "Préparation", icon: "check" }],
     photos: [{ url: "https://example.com/1.jpg", alt: "Atelier" },
@@ -287,6 +326,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (!demo.includes("https://example.com/2.jpg")) fail("galerie absente");
   if (!demo.includes('property="og:image"')) fail("og:image absent");
   if (!demo.includes('class="partner"')) fail("bloc partenaire absent");
+  if (!demo.includes("--brand:#0E4C92")) fail("thème non appliqué");
+  if (!demo.includes("--brand-deep:#09315")) fail("teinte foncée non dérivée");
   if (!demo.includes("CC BY-SA 4.0")) fail("crédit d'image absent (licence à attribution)");
   if (!demo.includes('content="noindex,nofollow"')) fail("démo indexable");
   if (!demo.includes('class="wm-bar"')) fail("filigrane absent");
@@ -308,7 +349,15 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (legacy.includes("svembed")) fail("Street View rendu sans coordonnées");
   if (legacy.includes('class="partner"')) fail("bloc partenaire rendu sans données");
 
-  // 4. Les motifs `$` du contenu ne doivent pas être réinterprétés.
+  // 4. Une couleur non valide ne doit jamais atteindre la feuille de style.
+  const evil = buildHtml(
+    { h1: "X", theme: { brand: "red;}body{display:none}/*", accent: "#FFC72C" } }, "fr", "");
+  if (evil.includes("--brand:red")) fail("couleur invalide injectée");
+  if (evil.includes("}body{")) fail("échappement de la déclaration CSS");
+  if (!evil.includes("--accent:#FFC72C")) fail("couleur valide rejetée à tort");
+  if (!buildHtml({ h1: "X" }, "fr", "").includes("<style>")) fail("styles de base perdus");
+
+  // 5. Les motifs `$` du contenu ne doivent pas être réinterprétés.
   const dollar = buildHtml({ h1: "Bar $& Grill", title: "Bar $& Grill" }, "en", "");
   if (!dollar.includes("Bar $&amp; Grill")) fail("motif $& corrompu");
 
