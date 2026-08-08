@@ -15,7 +15,7 @@ import express from "express";
 import { execFile } from "node:child_process";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { buildHtml } from "./build.js";
@@ -28,7 +28,9 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 // épinglée dans package.json qui tourne — pas celle que npx irait télécharger.
 const WRANGLER = join(HERE, "node_modules", "wrangler", "bin", "wrangler.js");
 const app = express();
-app.use(express.json({ limit: "1mb" }));
+// Les photos du commerce transitent en base64 dans le corps de /deploy ; 1 Mo
+// ne suffit plus dès qu'on envoie deux ou trois clichés.
+app.use(express.json({ limit: "16mb" }));
 
 const TOKEN = process.env.SITEGEN_TOKEN || "";
 const ACCOUNT = process.env.CLOUDFLARE_ACCOUNT_ID || "";
@@ -38,6 +40,21 @@ const auth = (req, res, next) =>
   TOKEN && req.get("X-Sitegen-Token") === TOKEN ? next() : res.status(401).json({ error: "bad token" });
 
 const projectName = (slug) => ("oueb-" + String(slug || "site")).slice(0, 54);
+
+/** Écrit les photos fournies dans le dossier déployé, à côté de l'index.
+ *  Le nom est réduit à son basename puis filtré : un `../` laissé passer
+ *  écrirait hors du dossier temporaire. */
+function writeAssets(dir, assets) {
+  const written = [];
+  for (const a of Array.isArray(assets) ? assets : []) {
+    if (!a || !a.name || !a.data_base64) continue;
+    const safe = basename(String(a.name)).replace(/[^A-Za-z0-9._-]/g, "");
+    if (!safe || safe.startsWith(".")) continue;
+    writeFileSync(join(dir, safe), Buffer.from(a.data_base64, "base64"));
+    written.push(safe);
+  }
+  return written;
+}
 
 const cfHeaders = () => ({ Authorization: `Bearer ${CF_TOKEN}` });
 const projectUrl = (p = "") =>
@@ -69,7 +86,7 @@ app.get("/healthz", (_req, res) => res.json({ ok: true }));
 
 app.post("/deploy", auth, async (req, res) => {
   const { slug, lang = "en", seo = {}, pay_url = "", watermark = true,
-          watermark_text, watermark_cta } = req.body || {};
+          watermark_text, watermark_cta, assets } = req.body || {};
   if (!slug || !seo.h1) return res.status(400).json({ error: "slug + seo.h1 requis" });
 
   // Seul un false explicite retire le filigrane (une valeur absente ou douteuse
@@ -78,13 +95,17 @@ app.post("/deploy", auth, async (req, res) => {
   const project = projectName(slug);
   const dir = mkdtempSync(join(tmpdir(), "site-"));
   try {
-    writeFileSync(join(dir, "index.html"), buildHtml(seo, lang, pay_url, {
+    // Le générateur ignore l'URL finale : on la lui fournit pour qu'il puisse
+    // rendre absolues les références servies depuis le site (og:image).
+    const withSite = { site_url: `https://${project}.pages.dev`, ...seo };
+    writeFileSync(join(dir, "index.html"), buildHtml(withSite, lang, pay_url, {
       watermark: wm,
       // Permet d'expliciter, sur une démo non sollicitée, qu'il s'agit d'une
       // proposition et non du site officiel du commerce.
       ...(watermark_text ? { watermarkText: watermark_text } : {}),
       ...(watermark_cta ? { watermarkCta: watermark_cta } : {}),
     }));
+    const files = writeAssets(dir, assets);
     await ensureProject(project);
     const { stdout } = await run(process.execPath, [
       WRANGLER, "pages", "deploy", dir,
@@ -101,6 +122,7 @@ app.post("/deploy", auth, async (req, res) => {
       url: `https://${project}.pages.dev`,
       deployment_url: m ? m[0] : null,
       watermark: wm,
+      assets: files,
     });
   } catch (e) {
     res.status(500).json({ error: String(e.stderr || e.message).slice(0, 500) });

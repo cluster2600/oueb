@@ -75,6 +75,14 @@ export function telHref(seo = {}) {
   return raw;
 }
 
+/** Rend absolue une URL de photo servie depuis le site lui-même. */
+export function absoluteUrl(url, siteUrl) {
+  const u = String(url || "");
+  if (!u || /^[a-z]+:/i.test(u) || u.startsWith("//")) return u;
+  if (!siteUrl) return u;
+  return String(siteUrl).replace(/\/+$/, "") + "/" + u.replace(/^\.?\//, "");
+}
+
 export function mapQuery(seo = {}) {
   return (seo.map_query ||
     [seo.address, seo.postal_code, seo.city].filter(Boolean).join(" ")).trim();
@@ -266,7 +274,11 @@ export function buildHtml(seo = {}, lang = "en", payUrl = "", opts = {}) {
     __LANG__: esc(lang),
     __TITLE__: esc(seo.title || seo.h1 || ""),
     __META_DESC__: esc(seo.meta_description || ""),
-    __OG_IMAGE__: photo ? `<meta property="og:image" content="${esc(photo.url)}">` : "",
+    // og:image doit être absolue : les réseaux sociaux ne résolvent pas les
+    // chemins relatifs, la vignette de partage resterait vide.
+    __OG_IMAGE__: photo
+      ? `<meta property="og:image" content="${esc(absoluteUrl(photo.url, seo.site_url))}">`
+      : "",
     __BRAND__: esc(brand),
     __NAVTEL__: tel
       ? `<a class="navtel" href="tel:${esc(tel)}">${esc(seo.phone || tel)}</a>` : "",
@@ -341,6 +353,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if ((demo.match(/<li class="item">/g) || []).length !== 2) fail("prestations manquantes");
   if (!demo.includes("https://example.com/2.jpg")) fail("galerie absente");
   if (!demo.includes('property="og:image"')) fail("og:image absent");
+  const rel = buildHtml({ ...seo, site_url: "https://x.pages.dev/",
+    photos: [{ url: "./facade.jpg" }] }, "fr", "");
+  if (!rel.includes('content="https://x.pages.dev/facade.jpg"')) fail("og:image non absolue");
+  if (!rel.includes('src="./facade.jpg"')) fail("src de la photo altérée");
   if (!demo.includes('class="partner"')) fail("bloc partenaire absent");
   if (!demo.includes("--brand:#0E4C92")) fail("thème non appliqué");
   if (!demo.includes("--brand-deep:#09315")) fail("teinte foncée non dérivée");
