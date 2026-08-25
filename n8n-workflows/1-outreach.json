@@ -132,7 +132,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { \"model\": \"nvidia/nemotron-3-ultra-550b-a55b\", \"stream\": false, \"max_tokens\": 4096, \"temperature\": 0.6, \"top_p\": 0.95, \"chat_template_kwargs\": { \"enable_thinking\": false }, \"messages\": [ { \"role\": \"system\", \"content\": $json.system_prompt + \" Reply with ONLY the requested JSON, no prose, no markdown fences.\" }, { \"role\": \"user\", \"content\": \"Etablissement: \" + $json.name + \" | \" + ($json.category||\"\") + \" | \" + ($json.address||\"\") + \". Genere le JSON one-page: title, meta_description, h1, h2[], hero_subtitle, sections[{heading,body}], cta.\" } ] } }}"
+        "jsonBody": "={{ { \"model\": \"nvidia/nemotron-3-ultra-550b-a55b\", \"stream\": false, \"max_tokens\": 4096, \"temperature\": 0.6, \"top_p\": 0.95, \"chat_template_kwargs\": { \"enable_thinking\": false }, \"messages\": [ { \"role\": \"system\", \"content\": $json.system_prompt + \" Reply with ONLY valid JSON, no prose or markdown fences. Never invent years in business, prices, certifications, testimonials, statistics or awards. Use only the verified facts supplied.\" }, { \"role\": \"user\", \"content\": \"Verified establishment: \" + $json.name + \" | category: \" + ($json.category||\"\") + \" | address: \" + ($json.address||\"\") + \" | city: \" + ($json.city||\"\") + \". Create concise premium one-page copy. Exact schema: {title,meta_description,h1,hero_subtitle,eyebrow,art_direction,services_heading,services_intro,services:[{title,body}],about:{eyebrow,title,body,quote},process:[{title,body}],primary_cta:{label,url}}. art_direction must be one of workshop, editorial, precision, hospitality. Set primary_cta.url to #contact. Do not add proof, photos, contact details or claims not present in the verified facts.\" } ] } }}"
       },
       "id": "37bd5356-5c03-4262-81f7-21f885e6cc0e",
       "name": "NVIDIA Nemotron (contenu+SEO)",
@@ -214,7 +214,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { \"slug\": $('Country Router').item.json.slug, \"lang\": $('Country Router').item.json.lang, \"seo\": JSON.parse($('NVIDIA Nemotron (contenu+SEO)').item.json.choices[0].message.content), \"pay_url\": $json.url } }}"
+        "jsonBody": "={{ { \"slug\": $('Country Router').item.json.slug, \"lang\": $('Country Router').item.json.lang, \"seo\": { ...JSON.parse($('NVIDIA Nemotron (contenu+SEO)').item.json.choices[0].message.content), \"brand\": $('Country Router').item.json.name, \"category\": $('Country Router').item.json.category, \"address\": $('Country Router').item.json.address, \"phone\": $('Country Router').item.json.phone, \"country\": $('Country Router').item.json.country }, \"pay_url\": $json.url } }}"
       },
       "id": "cdb63538-0df9-42e7-b17d-8a5b4e69797b",
       "name": "Sitegen — build+deploy Pages",

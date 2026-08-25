@@ -6,6 +6,11 @@ Stripe multi-devises (méthodes locales) → cold email Listmonk/SES**, avec **T
 CRM** et **Kanboard** pour le suivi. À l'encaissement : achat de domaine (Gandi) et
 mise en ligne automatique.
 
+Le générateur compose désormais chaque page selon le métier : atelier,
+éditorial, précision ou hospitalité. Il conserve un seul HTML statique, mais
+adapte typographie, rythme, palette et traitement d’image. Le contrat et les
+principes visuels sont documentés dans [`DESIGN.md`](DESIGN.md).
+
 Marchés cibles : 🇨🇭 Suisse · 🇱🇮 Liechtenstein · 🇲🇨 Monaco · 🇸🇬 Singapour · 🇯🇵 Japon · 🇺🇸 USA.
 Prix : 500 CHF / EUR / SGD / USD et **79 800 JPY**. Paiements locaux : TWINT (CH/LI),
 PayNow (SG), Konbini (JP), ACH/Link (US).
@@ -110,6 +115,7 @@ scraper/.venv/bin/python scraper/app.py     # -> selfcheck: OK  (parsing + endpo
 # sitegen
 npm --prefix sitegen install
 node sitegen/build.js                       # -> selfcheck: OK  (échappement + filigrane)
+npm --prefix sitegen run preview             # 4 directions dans .artifacts/oueb-preview
 
 docker compose config --quiet               # valide le compose + le .env
 ```

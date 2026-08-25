@@ -4,7 +4,11 @@
   "private": true,
   "type": "module",
   "description": "Génère un one-page statique depuis le JSON IA et le déploie sur Cloudflare Pages.",
-  "scripts": { "start": "node server.js" },
+  "scripts": {
+    "start": "node server.js",
+    "selfcheck": "node build.js",
+    "preview": "node preview.js"
+  },
   "dependencies": {
     "express": "^4.19.2",
     "wrangler": "^3.80.0"
