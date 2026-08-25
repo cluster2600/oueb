@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve, join } from "node:path";
-import { buildHtml } from "./build.js";
+import { buildHtml, checkStyleNesting } from "./build.js";
 
 const out = resolve(process.argv[2] || ".artifacts/oueb-preview");
 mkdirSync(out, { recursive: true });
@@ -130,10 +130,16 @@ const previews = [
 ];
 
 for (const preview of previews) {
-  writeFileSync(
-    join(out, preview.slug + ".html"),
-    buildHtml(preview.seo, "fr", "", { watermark: false }),
-  );
+  const html = buildHtml(preview.seo, "fr", "", { watermark: false });
+  if (!html.includes('class="art-' + preview.slug + '"'))
+    throw new Error("direction absente du rendu " + preview.slug);
+  if (!html.includes("<h1>") || /__[A-Z][A-Z_]+__/.test(html))
+    throw new Error("rendu incomplet " + preview.slug);
+  if (html.includes("wm-") || !html.includes('content="index,follow"'))
+    throw new Error("aperçu artistique indexable invalide " + preview.slug);
+  const styleError = checkStyleNesting(html);
+  if (styleError) throw new Error(preview.slug + " : " + styleError);
+  writeFileSync(join(out, preview.slug + ".html"), html);
 }
 
 console.log("Previews written to " + out);

@@ -569,6 +569,103 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (script.includes("</script><script>alert")) fail("JSON-LD");
   const dollar = buildHtml({ h1: "Bar $& Grill", title: "Bar $& Grill" }, "en", "");
   if (!dollar.includes("Bar $&amp; Grill")) fail("motif de remplacement");
+
+  const expectedDirections = {
+    workshop: { category: "menuiserie" },
+    editorial: { category: "conseil" },
+    precision: { category: "clinique" },
+    hospitality: { category: "restaurant" },
+  };
+  for (const [direction, data] of Object.entries(expectedDirections)) {
+    const inferred = buildHtml({ h1: "Direction", ...data }, "fr", "", { watermark: false });
+    if (!inferred.includes('class="art-' + direction + '"'))
+      fail("inférence " + direction);
+    const explicit = buildHtml({ h1: "Direction", art_direction: direction }, "fr", "", {
+      watermark: false,
+    });
+    if (!explicit.includes('class="art-' + direction + '"'))
+      fail("direction explicite " + direction);
+  }
+  const invalidDirection = buildHtml({ h1: "Direction", art_direction: "inconnue" }, "fr", "");
+  if (!invalidDirection.includes('class="art-editorial"')) fail("direction de repli");
+
+  if (safeUrl("#contact", { anchors: true }) !== "#contact") fail("ancre sûre");
+  if (safeUrl("mailto:test@example.com", { email: true }) !== "mailto:test@example.com")
+    fail("adresse email sûre");
+  if (!safeUrl("https://example.com/path").startsWith("https://example.com/path"))
+    fail("URL https sûre");
+  if (safeUrl("javascript:alert(1)") || safeUrl("#bad anchor", { anchors: true }))
+    fail("URL dangereuse acceptée");
+  if (absoluteUrl("/image.jpg", "") !== "/image.jpg") fail("URL sans origine");
+  if (absoluteUrl("https://example.com/image.jpg", "https://x.pages.dev") !==
+      "https://example.com/image.jpg") fail("URL absolue altérée");
+
+  if (telHref({ phone_href: "+41 (0)21 555 01 01" }) !== "+410215550101")
+    fail("téléphone explicite");
+  if (telHref({ phone: "0041 21 555 01 01" }) !== "+41215550101")
+    fail("téléphone international");
+  if (telHref({ phone: "021 555 01 01", dial_code: "+41" }) !== "+41215550101")
+    fail("téléphone local");
+
+  const optional = buildHtml({
+    h1: "Tous les blocs",
+    email: "hello@example.com",
+    map: false,
+    theme: { brand: "#ffffff", accent: "#000000", brand_dark: "#123456" },
+    proof: [{ value: "01", label: "repère" }, null],
+    partner: {
+      tag: "Partenaire",
+      title: "Maison locale",
+      body: "Une collaboration vérifiée.",
+      image: { url: "/partner.jpg", alt: "Partenaire", credit: {
+        text: "Photo partenaire",
+        url: "https://example.com/credit",
+      } },
+    },
+    about: {
+      title: "Notre histoire",
+      body: "Un texte court.",
+      image: { url: "/story.jpg", alt: "Atelier" },
+    },
+    photos: [
+      { url: "/hero.jpg", alt: "Accueil" },
+      { url: "/gallery.jpg", alt: "Galerie", caption: "Un détail" },
+    ],
+    process: [{ title: "Écouter" }, { body: "Agir" }, null],
+    legal_links: [
+      { label: "Mentions légales", url: "https://example.com/legal" },
+      { label: "Piège", url: "javascript:alert(1)" },
+    ],
+  }, "français", "", {
+    watermarkText: "APERÇU PERSONNALISÉ",
+    watermarkCta: "Commander",
+  });
+  if (!optional.includes('lang="en"')) fail("langue invalide");
+  if (!optional.includes('href="mailto:hello@example.com"')) fail("CTA email de repli");
+  if (!optional.includes("partner__grid") || !optional.includes("story__grid") ||
+      !optional.includes("gallery__grid") || !optional.includes("process__grid"))
+    fail("blocs optionnels");
+  if (!optional.includes("Photo partenaire") || !optional.includes("Mentions légales"))
+    fail("crédits et mentions");
+  if (optional.includes("google.com/maps") || optional.includes("javascript:"))
+    fail("carte ou lien dangereux rendu");
+  if (!optional.includes("APERÇU PERSONNALISÉ") || !optional.includes("--brand-dark:#123456") ||
+      !optional.includes("--on-brand:#171914") || !optional.includes("--on-accent:#ffffff"))
+    fail("options de thème ou filigrane");
+
+  const workflow = JSON.parse(readFileSync(
+    join(HERE, "..", "n8n-workflows", "1-outreach.json"),
+    "utf8",
+  ));
+  const llmNode = workflow.nodes?.find((node) => node.name === "NVIDIA Nemotron (contenu+SEO)");
+  const llmBody = String(llmNode?.parameters?.jsonBody || "");
+  for (const direction of DIRECTIONS) {
+    if (!llmBody.includes(direction)) fail("contrat n8n : " + direction);
+  }
+  if (!llmBody.includes("Set primary_cta.url to #contact") ||
+      !llmBody.includes("Do not add proof, photos, contact details or claims"))
+    fail("contrat n8n : garde-fous");
+
   for (const [name, html] of [
     ["démo", demo],
     ["payé", paid],
@@ -576,6 +673,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     ["injection", evil],
     ["remplacement", dollar],
     ["photo relative", relative],
+    ["blocs optionnels", optional],
   ]) {
     const styleError = checkStyleNesting(html);
     if (styleError) fail(name + " : " + styleError);
