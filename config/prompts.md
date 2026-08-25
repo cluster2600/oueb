@@ -3,12 +3,31 @@
 Chaque `prompt_key` de `country_matrix.yaml` renvoie à un system prompt ci-dessous.
 Le node LLM (NVIDIA Nemotron) reçoit `{{system}}` + un `{{user}}` contenant les données du
 lead (raison sociale, secteur, ville, note Google, spécialités) et renvoie un JSON
-strict :
+strict. Le contenu pilote ensuite une des quatre directions artistiques du
+générateur : `workshop`, `editorial`, `precision` ou `hospitality`.
 
 ```json
-{ "title": "", "meta_description": "", "h1": "", "h2": ["", ""],
-  "hero_subtitle": "", "sections": [{"heading":"","body":""}], "cta": "" }
+{
+  "title": "",
+  "meta_description": "",
+  "h1": "",
+  "hero_subtitle": "",
+  "eyebrow": "",
+  "art_direction": "workshop|editorial|precision|hospitality",
+  "services_heading": "",
+  "services_intro": "",
+  "services": [{ "title": "", "body": "" }],
+  "about": { "eyebrow": "", "title": "", "body": "", "quote": "" },
+  "process": [{ "title": "", "body": "" }],
+  "primary_cta": { "label": "", "url": "#contact" }
+}
 ```
+
+Le modèle ne doit jamais inventer une ancienneté, un prix, une certification,
+un témoignage ou une statistique. Les champs `proof`, `photos`, `partner`,
+`hours`, coordonnées et liens sont ajoutés seulement depuis des données source
+vérifiées. Les anciens champs `h2[]` et `sections[]` restent acceptés par
+`sitegen`, mais ne sont plus demandés au modèle.
 
 > **Modèle : `nvidia/nemotron-3-ultra-550b-a55b`** (endpoint NVIDIA, clé lue depuis
 > OCI Vault). MoE 550B / 55B actifs — excellent multilingue, keigo japonais et
