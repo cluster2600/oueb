@@ -13,8 +13,9 @@ cartes interchangeables. Le même HTML s’adapte grâce à quatre directions :
   dominante ; restauration, hôtellerie et bien-être.
 
 Le générateur peut inférer cette direction depuis le secteur. La valeur
-`art_direction` permet au contenu validé de l’imposer. Toute autre valeur revient
-à `editorial`.
+`art_direction` permet au contenu validé de l’imposer. Une valeur inconnue est
+ignorée : le générateur réinfère la direction depuis le secteur, puis revient à
+`editorial` si aucun métier ne correspond.
 
 ## Principes
 

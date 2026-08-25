@@ -114,7 +114,7 @@ scraper/.venv/bin/python scraper/app.py     # -> selfcheck: OK  (parsing + endpo
 
 # sitegen
 npm --prefix sitegen install
-node sitegen/build.js                       # -> selfcheck: OK  (échappement + filigrane)
+npm --prefix sitegen run selfcheck          # -> selfcheck: OK  (sécurité, contenu, directions, filigrane)
 npm --prefix sitegen run preview             # 4 directions dans .artifacts/oueb-preview
 
 docker compose config --quiet               # valide le compose + le .env
